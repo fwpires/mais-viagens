@@ -3486,7 +3486,8 @@ window.addTrechoExtraRV        = addTrechoExtraRV;
 window.removeTrechoExtraRV     = removeTrechoExtraRV;
 window.addPaxExtraRV           = addPaxExtraRV;
 window.removePaxExtraRV        = removePaxExtraRV;
-  _rvPaxCount++;
+
+function addPaxAereoRV(nome) {
   var id = _rvPaxCount;
   var cont = document.getElementById('rv-ae-pax-container');
   if (!cont) return;
