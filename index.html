@@ -1164,8 +1164,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
             <div style="font-family:Arial,sans-serif;font-size:.58rem;font-weight:700;color:#1db954;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.3rem">Cliente / Sacado</div>
             <div style="font-family:Arial,sans-serif;font-size:.95rem;font-weight:700;color:#1a1a2e" id="vch-cliente">—</div>
           </div>
-          <div>
-            <div style="font-family:Arial,sans-serif;font-size:.58rem;font-weight:700;color:#1db954;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.3rem">Passageiro(s)</div>
+          <div id="vch-pessoas-bloco" style="display:none">
+            <div style="font-family:Arial,sans-serif;font-size:.58rem;font-weight:700;color:#1db954;text-transform:uppercase;letter-spacing:.1em;margin-bottom:.3rem" id="vch-pessoas-label">Passageiro(s)</div>
             <div style="font-family:Arial,sans-serif;font-size:.88rem;color:#333" id="vch-passageiro">—</div>
           </div>
         </div>
@@ -1442,6 +1442,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
             </div>
             <div><div class="sp-label">Nº de Hóspedes</div><input type="number" class="sp-input" id="rv-ht-hospedes" placeholder="Ex: 2" min="1"></div>
           </div>
+          <div style="border-top:1px solid rgba(29,185,84,.25);padding-top:.7rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+              <div class="sp-label" style="margin:0">👥 Hóspedes</div>
+              <button type="button" onclick="addPessoaRV('ht','hóspede')" style="background:rgba(29,185,84,.15);border:1px solid rgba(29,185,84,.4);border-radius:20px;padding:.28rem .7rem;color:#86efac;font-family:'DM Sans',sans-serif;font-size:.73rem;font-weight:600;cursor:pointer">+ Adicionar Hóspede</button>
+            </div>
+            <div id="rv-ht-pax-container" style="display:flex;flex-direction:column;gap:.4rem"></div>
+          </div>
         </div>
       </div>
 
@@ -1504,6 +1511,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
             <div><div class="sp-label">Vigência Fim</div><input type="date" class="sp-input" id="rv-sg-fim"></div>
             <div><div class="sp-label">Cobertura Médica (USD)</div><input type="text" class="sp-input" id="rv-sg-cobertura" placeholder="Ex: USD 30.000"></div>
           </div>
+          <div style="border-top:1px solid rgba(125,211,252,.25);padding-top:.7rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+              <div class="sp-label" style="margin:0">👥 Segurados</div>
+              <button type="button" onclick="addPessoaRV('sg','segurado')" style="background:rgba(14,165,233,.15);border:1px solid rgba(125,211,252,.4);border-radius:20px;padding:.28rem .7rem;color:#7dd3fc;font-family:'DM Sans',sans-serif;font-size:.73rem;font-weight:600;cursor:pointer">+ Adicionar Segurado</button>
+            </div>
+            <div id="rv-sg-pax-container" style="display:flex;flex-direction:column;gap:.4rem"></div>
+          </div>
         </div>
       </div>
 
@@ -1539,6 +1553,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
               </select>
             </div>
           </div>
+          <div style="border-top:1px solid rgba(56,189,248,.25);padding-top:.7rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+              <div class="sp-label" style="margin:0">👥 Passageiros</div>
+              <button type="button" onclick="addPessoaRV('cz','passageiro')" style="background:rgba(56,189,248,.15);border:1px solid rgba(56,189,248,.4);border-radius:20px;padding:.28rem .7rem;color:#7dd3fc;font-family:'DM Sans',sans-serif;font-size:.73rem;font-weight:600;cursor:pointer">+ Adicionar Passageiro</button>
+            </div>
+            <div id="rv-cz-pax-container" style="display:flex;flex-direction:column;gap:.4rem"></div>
+          </div>
         </div>
       </div>
 
@@ -1558,6 +1579,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
             <div><div class="sp-label">Duração Aprox.</div><input type="text" class="sp-input" id="rv-ex-duracao" placeholder="Ex: 4 horas, dia inteiro..."></div>
           </div>
           <div><div class="sp-label">Ponto de Encontro / Local de Saída</div><input type="text" class="sp-input" id="rv-ex-local" placeholder="Ex: Hall do hotel, Portão A..."></div>
+          <div style="border-top:1px solid rgba(251,191,36,.25);padding-top:.7rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+              <div class="sp-label" style="margin:0">👥 Participantes</div>
+              <button type="button" onclick="addPessoaRV('ex','participante')" style="background:rgba(251,191,36,.15);border:1px solid rgba(251,191,36,.4);border-radius:20px;padding:.28rem .7rem;color:#fde68a;font-family:'DM Sans',sans-serif;font-size:.73rem;font-weight:600;cursor:pointer">+ Adicionar Participante</button>
+            </div>
+            <div id="rv-ex-pax-container" style="display:flex;flex-direction:column;gap:.4rem"></div>
+          </div>
         </div>
       </div>
 
@@ -1587,6 +1615,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
             <div><div class="sp-label">Origem</div><input type="text" class="sp-input" id="rv-tr-origem" placeholder="Ex: Aeroporto GRU"></div>
             <div><div class="sp-label">Destino</div><input type="text" class="sp-input" id="rv-tr-destino" placeholder="Ex: Hotel Intercontinental"></div>
           </div>
+          <div style="border-top:1px solid rgba(148,163,184,.25);padding-top:.7rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+              <div class="sp-label" style="margin:0">👥 Passageiros</div>
+              <button type="button" onclick="addPessoaRV('tr','passageiro')" style="background:rgba(148,163,184,.12);border:1px solid rgba(148,163,184,.4);border-radius:20px;padding:.28rem .7rem;color:#cbd5e1;font-family:'DM Sans',sans-serif;font-size:.73rem;font-weight:600;cursor:pointer">+ Adicionar Passageiro</button>
+            </div>
+            <div id="rv-tr-pax-container" style="display:flex;flex-direction:column;gap:.4rem"></div>
+          </div>
         </div>
       </div>
 
@@ -1612,6 +1647,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
               </select>
             </div>
           </div>
+          <div style="border-top:1px solid rgba(216,180,254,.25);padding-top:.7rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+              <div class="sp-label" style="margin:0">👥 Passageiros</div>
+              <button type="button" onclick="addPessoaRV('as','passageiro')" style="background:rgba(124,58,237,.15);border:1px solid rgba(216,180,254,.4);border-radius:20px;padding:.28rem .7rem;color:#d8b4fe;font-family:'DM Sans',sans-serif;font-size:.73rem;font-weight:600;cursor:pointer">+ Adicionar Passageiro</button>
+            </div>
+            <div id="rv-as-pax-container" style="display:flex;flex-direction:column;gap:.4rem"></div>
+          </div>
         </div>
       </div>
 
@@ -1636,6 +1678,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
               </select>
             </div>
             <div><div class="sp-label">Nº do Passageiro / PNR</div><input type="text" class="sp-input" id="rv-bg-pnr" placeholder="Ex: ABC123"></div>
+          </div>
+          <div style="border-top:1px solid rgba(167,243,208,.25);padding-top:.7rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+              <div class="sp-label" style="margin:0">👥 Passageiros</div>
+              <button type="button" onclick="addPessoaRV('bg','passageiro')" style="background:rgba(6,95,70,.15);border:1px solid rgba(167,243,208,.4);border-radius:20px;padding:.28rem .7rem;color:#6ee7b7;font-family:'DM Sans',sans-serif;font-size:.73rem;font-weight:600;cursor:pointer">+ Adicionar Passageiro</button>
+            </div>
+            <div id="rv-bg-pax-container" style="display:flex;flex-direction:column;gap:.4rem"></div>
           </div>
         </div>
       </div>
@@ -3178,6 +3227,12 @@ function novaVenda(prefill) {
   if (paxCont) { paxCont.innerHTML = ''; _rvPaxCount = 0; }
   var extraCont = document.getElementById('rv-ae-extra-passagens-container');
   if (extraCont) { extraCont.innerHTML = ''; _rvPassagemCount = 0; _rvTrechoExtraCount = {}; _rvPaxExtraCount = {}; }
+  // Limpa containers de pessoas de todos os produtos
+  ['ht','sg','cz','ex','tr','as','bg'].forEach(function(p) {
+    var c = document.getElementById('rv-'+p+'-pax-container');
+    if (c) c.innerHTML = '';
+    if (_rvPessoaCounters) _rvPessoaCounters[p] = 0;
+  });
   var diariasDisp = document.getElementById('rv-ht-diarias-display');
   if (diariasDisp) diariasDisp.textContent = '—';
   document.getElementById('rv-forma-pgto').value = '';
@@ -3488,6 +3543,53 @@ window.removeTrechoExtraRV     = removeTrechoExtraRV;
 window.addPaxExtraRV           = addPaxExtraRV;
 window.removePaxExtraRV        = removePaxExtraRV;
 
+// ===== PESSOAS GENÉRICAS POR PRODUTO =====
+var _rvPessoaCounters = {};
+
+function addPessoaRV(prefix, labelSingular, nome) {
+  if (!_rvPessoaCounters[prefix]) _rvPessoaCounters[prefix] = 0;
+  _rvPessoaCounters[prefix]++;
+  var id = _rvPessoaCounters[prefix];
+  var cont = document.getElementById('rv-'+prefix+'-pax-container');
+  if (!cont) return;
+  var div = document.createElement('div');
+  div.id = 'rv-'+prefix+'-pax-item-'+id;
+  div.style.cssText = 'display:flex;align-items:center;gap:.4rem';
+  div.innerHTML =
+    '<div style="background:rgba(255,255,255,.1);border-radius:4px;padding:.22rem .5rem;font-size:.68rem;font-weight:700;color:#e2e8f0;min-width:22px;text-align:center;flex-shrink:0">'+id+'</div>'
+    +'<input type="text" class="sp-input" id="rv-'+prefix+'-pax-nome-'+id+'" placeholder="Nome do '+labelSingular+'" style="flex:1" value="'+(nome||'')+'">'
+    +'<button type="button" onclick="removePessoaRV(\''+prefix+'\','+id+')" style="background:rgba(226,33,52,.15);border:none;color:#f87171;border-radius:4px;width:26px;height:26px;cursor:pointer;font-size:.85rem;flex-shrink:0;display:flex;align-items:center;justify-content:center">✕</button>';
+  cont.appendChild(div);
+}
+
+function removePessoaRV(prefix, id) {
+  var el = document.getElementById('rv-'+prefix+'-pax-item-'+id);
+  if (el) el.remove();
+}
+
+function getPessoasRV(prefix) {
+  var cont = document.getElementById('rv-'+prefix+'-pax-container');
+  if (!cont) return [];
+  var list = [];
+  cont.querySelectorAll('input[type="text"]').forEach(function(inp) {
+    var v = inp.value.trim();
+    if (v) list.push(v);
+  });
+  return list;
+}
+
+function setPessoasRV(prefix, lista) {
+  var cont = document.getElementById('rv-'+prefix+'-pax-container');
+  if (!cont) return;
+  cont.innerHTML = '';
+  _rvPessoaCounters[prefix] = 0;
+  if (!lista || !lista.length) return;
+  lista.forEach(function(nome) { addPessoaRV(prefix, '', nome); });
+}
+
+window.addPessoaRV    = addPessoaRV;
+window.removePessoaRV = removePessoaRV;
+
 function addPaxAereoRV(nome) {
   var id = _rvPaxCount;
   var cont = document.getElementById('rv-ae-pax-container');
@@ -3640,6 +3742,7 @@ function getProdutoDetalheRV() {
       quarto:   document.getElementById('rv-ht-quarto')?.value||'',
       regime:   document.getElementById('rv-ht-regime')?.value||'',
       hospedes: document.getElementById('rv-ht-hospedes')?.value||'',
+      pessoas:  getPessoasRV('ht'),
     };
   } else if (v === 'Aluguel de Carro') {
     d = {
@@ -3660,6 +3763,7 @@ function getProdutoDetalheRV() {
       inicio:     document.getElementById('rv-sg-inicio')?.value||'',
       fim:        document.getElementById('rv-sg-fim')?.value||'',
       cobertura:  document.getElementById('rv-sg-cobertura')?.value||'',
+      pessoas:    getPessoasRV('sg'),
     };
   } else if (v === 'Cruzeiro') {
     d = {
@@ -3671,6 +3775,7 @@ function getProdutoDetalheRV() {
       porto:       document.getElementById('rv-cz-porto')?.value||'',
       cabine:      document.getElementById('rv-cz-cabine')?.value||'',
       bebidas:     document.getElementById('rv-cz-bebidas')?.value||'',
+      pessoas:     getPessoasRV('cz'),
     };
   } else if (v === 'Excursão / Passeio') {
     d = {
@@ -3680,6 +3785,7 @@ function getProdutoDetalheRV() {
       horario:   document.getElementById('rv-ex-horario')?.value||'',
       duracao:   document.getElementById('rv-ex-duracao')?.value||'',
       local:     document.getElementById('rv-ex-local')?.value||'',
+      pessoas:   getPessoasRV('ex'),
     };
   } else if (v === 'Transfer') {
     d = {
@@ -3690,6 +3796,7 @@ function getProdutoDetalheRV() {
       pax:       document.getElementById('rv-tr-pax')?.value||'',
       origem:    document.getElementById('rv-tr-origem')?.value||'',
       destino:   document.getElementById('rv-tr-destino')?.value||'',
+      pessoas:   getPessoasRV('tr'),
     };
   } else if (v === 'Marcação de Assento') {
     d = {
@@ -3699,6 +3806,7 @@ function getProdutoDetalheRV() {
       trecho:  document.getElementById('rv-as-trecho')?.value||'',
       assento: document.getElementById('rv-as-assento')?.value||'',
       tipo:    document.getElementById('rv-as-tipo')?.value||'',
+      pessoas: getPessoasRV('as'),
     };
   } else if (v === 'Franquia Bagagem') {
     d = {
@@ -3708,6 +3816,7 @@ function getProdutoDetalheRV() {
       trecho:   document.getElementById('rv-bg-trecho')?.value||'',
       franquia: document.getElementById('rv-bg-franquia')?.value||'',
       pnr:      document.getElementById('rv-bg-pnr')?.value||'',
+      pessoas:  getPessoasRV('bg'),
     };
   } else {
     d = {
@@ -3752,6 +3861,7 @@ function setProdutoDetalheRV(produto, detalhe) {
     if(d.quarto)   document.getElementById('rv-ht-quarto').value   = d.quarto;
     if(d.regime)   document.getElementById('rv-ht-regime').value   = d.regime;
     if(d.hospedes) document.getElementById('rv-ht-hospedes').value = d.hospedes;
+    if(d.pessoas)  setPessoasRV('ht', d.pessoas);
     calcDiariasRV();
   } else if (produto === 'Aluguel de Carro') {
     if(d.locadora)  document.getElementById('rv-cr-locadora').value  = d.locadora;
@@ -3769,6 +3879,7 @@ function setProdutoDetalheRV(produto, detalhe) {
     if(d.inicio)     document.getElementById('rv-sg-inicio').value     = d.inicio;
     if(d.fim)        document.getElementById('rv-sg-fim').value        = d.fim;
     if(d.cobertura)  document.getElementById('rv-sg-cobertura').value  = d.cobertura;
+    if(d.pessoas)    setPessoasRV('sg', d.pessoas);
   } else if (produto === 'Cruzeiro') {
     if(d.cia)         document.getElementById('rv-cz-cia').value         = d.cia;
     if(d.navio)       document.getElementById('rv-cz-navio').value       = d.navio;
@@ -3778,6 +3889,7 @@ function setProdutoDetalheRV(produto, detalhe) {
     if(d.porto)       document.getElementById('rv-cz-porto').value       = d.porto;
     if(d.cabine)      document.getElementById('rv-cz-cabine').value      = d.cabine;
     if(d.bebidas)     document.getElementById('rv-cz-bebidas').value     = d.bebidas;
+    if(d.pessoas)     setPessoasRV('cz', d.pessoas);
   } else if (produto === 'Excursão / Passeio') {
     if(d.nome)      document.getElementById('rv-ex-nome').value      = d.nome;
     if(d.operadora) document.getElementById('rv-ex-operadora').value = d.operadora;
@@ -3785,6 +3897,7 @@ function setProdutoDetalheRV(produto, detalhe) {
     if(d.horario)   document.getElementById('rv-ex-horario').value   = d.horario;
     if(d.duracao)   document.getElementById('rv-ex-duracao').value   = d.duracao;
     if(d.local)     document.getElementById('rv-ex-local').value     = d.local;
+    if(d.pessoas)   setPessoasRV('ex', d.pessoas);
   } else if (produto === 'Transfer') {
     if(d.tipo)      document.getElementById('rv-tr-tipo').value      = d.tipo;
     if(d.prestador) document.getElementById('rv-tr-prestador').value = d.prestador;
@@ -3793,6 +3906,7 @@ function setProdutoDetalheRV(produto, detalhe) {
     if(d.pax)       document.getElementById('rv-tr-pax').value       = d.pax;
     if(d.origem)    document.getElementById('rv-tr-origem').value    = d.origem;
     if(d.destino)   document.getElementById('rv-tr-destino').value   = d.destino;
+    if(d.pessoas)   setPessoasRV('tr', d.pessoas);
   } else if (produto === 'Marcação de Assento') {
     if(d.cia)     document.getElementById('rv-as-cia').value     = d.cia;
     if(d.voo)     document.getElementById('rv-as-voo').value     = d.voo;
@@ -3800,6 +3914,7 @@ function setProdutoDetalheRV(produto, detalhe) {
     if(d.trecho)  document.getElementById('rv-as-trecho').value  = d.trecho;
     if(d.assento) document.getElementById('rv-as-assento').value = d.assento;
     if(d.tipo)    document.getElementById('rv-as-tipo').value    = d.tipo;
+    if(d.pessoas) setPessoasRV('as', d.pessoas);
   } else if (produto === 'Franquia Bagagem') {
     if(d.cia)      document.getElementById('rv-bg-cia').value      = d.cia;
     if(d.voo)      document.getElementById('rv-bg-voo').value      = d.voo;
@@ -3807,6 +3922,7 @@ function setProdutoDetalheRV(produto, detalhe) {
     if(d.trecho)   document.getElementById('rv-bg-trecho').value   = d.trecho;
     if(d.franquia) document.getElementById('rv-bg-franquia').value = d.franquia;
     if(d.pnr)      document.getElementById('rv-bg-pnr').value      = d.pnr;
+    if(d.pessoas)  setPessoasRV('bg', d.pessoas);
   } else {
     if(d.tipo)     document.getElementById('rv-ot-tipo').value     = d.tipo;
     if(d.validade) document.getElementById('rv-ot-validade').value = d.validade;
@@ -4212,7 +4328,33 @@ function gerarVoucher(id) {
   document.getElementById('vch-numero').textContent     = v.voucher || '—';
   document.getElementById('vch-data-label').textContent = 'Data: ' + fmtD(v.data);
   document.getElementById('vch-cliente').textContent    = v.cliente    || '—';
-  document.getElementById('vch-passageiro').textContent = v.passageiro || '—';
+  // ── Pessoas do produto (passageiros, hóspedes, segurados, etc.) ──
+  var pessoasDetalhe = [];
+  var pessoasLabel   = '';
+  if (v.detalhe) {
+    var dP = v.detalhe;
+    if (v.produto === 'Passagem Aérea')        { pessoasDetalhe = dP.passageiros || []; pessoasLabel = 'Passageiro(s)'; }
+    else if (v.produto === 'Diárias de Hospedagem') { pessoasDetalhe = dP.pessoas || []; pessoasLabel = 'Hóspede(s)'; }
+    else if (v.produto === 'Seguro Viagem')    { pessoasDetalhe = dP.pessoas || []; pessoasLabel = 'Segurado(s)'; }
+    else if (v.produto === 'Cruzeiro')         { pessoasDetalhe = dP.pessoas || []; pessoasLabel = 'Passageiro(s)'; }
+    else if (v.produto === 'Excursão / Passeio') { pessoasDetalhe = dP.pessoas || []; pessoasLabel = 'Participante(s)'; }
+    else if (v.produto === 'Transfer')         { pessoasDetalhe = dP.pessoas || []; pessoasLabel = 'Passageiro(s)'; }
+    else if (v.produto === 'Marcação de Assento') { pessoasDetalhe = dP.pessoas || []; pessoasLabel = 'Passageiro(s)'; }
+    else if (v.produto === 'Franquia Bagagem') { pessoasDetalhe = dP.pessoas || []; pessoasLabel = 'Passageiro(s)'; }
+  }
+
+  var pessoasBloco = document.getElementById('vch-pessoas-bloco');
+  var pessoasLabelEl = document.getElementById('vch-pessoas-label');
+  var pessoasEl = document.getElementById('vch-passageiro');
+  if (pessoasDetalhe && pessoasDetalhe.length > 0) {
+    pessoasBloco.style.display = 'block';
+    pessoasLabelEl.textContent = pessoasLabel;
+    pessoasEl.innerHTML = pessoasDetalhe.map(function(p, i) {
+      return '<div style="font-family:Arial,sans-serif;font-size:.82rem;font-weight:600;color:#1a1a2e">'+(i+1)+'. '+p+'</div>';
+    }).join('');
+  } else {
+    pessoasBloco.style.display = 'none';
+  }
   document.getElementById('vch-valor').textContent      = fmtBRL(v.valorFinal);
   document.getElementById('vch-forma-pgto-label').textContent = 'Forma de Pagamento: ' + (v.formaPgtoCliente || '—');
 
