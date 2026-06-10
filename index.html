@@ -3613,7 +3613,9 @@ function setTrechosRV(trechos) {
 }
 
 function getProdutoDetalheRV() {
+  try {
   var sel = document.getElementById('rv-produto');
+  if (!sel) return {};
   var v   = sel.value === '__custom__' ? '__custom__' : sel.value;
   var d   = {};
 
@@ -3714,6 +3716,10 @@ function getProdutoDetalheRV() {
     };
   }
   return d;
+  } catch(err) {
+    console.error('Erro em getProdutoDetalheRV:', err);
+    return {};
+  }
 }
 
 function setProdutoDetalheRV(produto, detalhe) {
@@ -3840,10 +3846,10 @@ function getProdutoVenda() {
 }
 
 function salvarVenda() {
+  try {
   var cliente = document.getElementById('rv-cliente').value.trim();
   if (!cliente) { toast('⚠️ Informe o nome do cliente'); return; }
   var editId = document.getElementById('rv-edit-id').value;
-  // Avança voucher apenas para vendas novas (não edição)
   var voucherNum = editId
     ? (document.getElementById('rv-voucher')?.value || getNextVoucher())
     : advanceVoucher();
@@ -3865,7 +3871,7 @@ function salvarVenda() {
     fatura:       document.getElementById('rv-fatura').value.trim(),
     vendedor:     document.getElementById('rv-vendedor').value.trim(),
     cliente:      cliente,
-    destino:      document.getElementById('rv-destino').value.trim(),
+    destino:      document.getElementById('rv-destino').value || '',
     produto:      getProdutoVenda(),
     fornecedor:   document.getElementById('rv-fornecedor').value.trim(),
     campoEspecifico: document.getElementById('rv-campo-especifico')?.value.trim() || '',
@@ -3888,7 +3894,7 @@ function salvarVenda() {
 
   if (editId) {
     var idx = vendas.findIndex(function(v){ return v.id === editId; });
-    if (idx >= 0) vendas[idx] = venda;
+    if (idx >= 0) vendas[idx] = venda; else vendas.unshift(venda);
   } else {
     vendas.unshift(venda);
   }
@@ -3898,9 +3904,13 @@ function salvarVenda() {
   document.getElementById('rv-edit-id').value = '';
   toggleTabelaRV(true);
   renderVendas();
-  // Sync para KV
-  setTimeout(syncVendasToKV, 500);
+  try { setTimeout(syncVendasToKV, 500); } catch(e) {}
   toast('✅ Venda registrada com sucesso!');
+
+  } catch(err) {
+    console.error('Erro ao salvar venda:', err);
+    toast('❌ Erro ao salvar: ' + err.message);
+  }
 }
 
 function editarVenda(id) {
