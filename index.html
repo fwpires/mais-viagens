@@ -965,9 +965,21 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
 
   /* ── Tamanho de página ── */
   body.printing-voucher{ @page{ margin:8mm; size:A5 portrait } }
-  body:not(.printing-voucher){ @page{ margin:8mm; size:A4 portrait } }
+  body:not(.printing-voucher):not(.printing-relatorio){ @page{ margin:8mm; size:A4 portrait } }
+  body.printing-relatorio{ @page{ margin:10mm; size:A4 landscape } }
+
+  /* ── MODO RELATÓRIO ── */
+  body.printing-relatorio .app,
+  body.printing-relatorio .sidebar,
+  body.printing-relatorio .preview-area,
+  body.printing-relatorio .mobile-tab-bar,
+  body.printing-relatorio .toast,
+  body.printing-relatorio .modal-overlay { display:none!important }
+  body.printing-relatorio #relatorio-print-area { display:block!important; visibility:visible!important; }
+  body.printing-relatorio #relatorio-print-area * { visibility:visible!important }
 }
 </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 </head>
 <body>
 <div class="app">
@@ -1079,6 +1091,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
       🕐 Histórico de Faturas
     </button>
+    <button class="btn-historico-sidebar" style="border-color:rgba(99,179,237,.45);color:#63b3ed;margin-top:.4rem" onclick="openDashboard()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      📈 Dashboard
+    </button>
     <button class="btn-historico-sidebar" style="border-color:rgba(232,160,32,.4);color:#fcd34d;margin-top:.4rem" onclick="openRegistro()">
       <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/></svg>
       📊 Registro de Vendas
@@ -1091,6 +1107,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
   <div class="preview-controls">
     <button class="btn-nova-fatura-preview" id="btn-nova-fatura-preview" onclick="novaFatura()">
       + Nova Fatura
+    </button>
+    <button class="btn-registro" onclick="openDashboard()" title="Dashboard" style="background:rgba(99,179,237,.12);border-color:rgba(99,179,237,.4);color:#63b3ed">
+      <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      📈 Dashboard
     </button>
     <button class="btn-registro" onclick="openRegistro()" title="Registro de Vendas">
       <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -1215,11 +1235,146 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12,6 12,12 16,14"/></svg>
     Histórico
   </button>
+  <button class="mobile-tab-btn" id="tab-btn-dash" onclick="switchTab('dash');openDashboard()">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Dashboard
+  </button>
   <button class="mobile-tab-btn" id="tab-btn-cfg" onclick="switchTab('cfg');openSettings()">
     <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
     Config
   </button>
 </div>
+
+
+<!-- DASHBOARD MODAL -->
+<div class="modal-overlay" id="dashboard-overlay" style="align-items:flex-start;padding-top:2vh;padding-bottom:2vh">
+  <div class="modal" style="width:98vw;max-width:1300px;height:96vh;max-height:96vh;display:flex;flex-direction:column">
+    <div class="modal-header" style="background:rgba(99,179,237,.12);border-bottom:1px solid rgba(99,179,237,.3)">
+      <span class="modal-title" style="color:#63b3ed">📈 Dashboard & Relatórios</span>
+      <button class="modal-close" onclick="closeDashboard()">×</button>
+    </div>
+
+    <!-- Filtros -->
+    <div style="padding:.75rem 1.2rem;border-bottom:1px solid var(--sp-border2);display:flex;flex-wrap:wrap;gap:.65rem;align-items:flex-end;background:rgba(99,179,237,.04)">
+      <div>
+        <div style="font-size:.62rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.28rem">De</div>
+        <input type="date" id="dash-filter-de" onchange="renderDashboard()" style="background:var(--sp-surface2);border:1px solid var(--sp-border);border-radius:6px;padding:.38rem .6rem;color:var(--sp-white);font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none">
+      </div>
+      <div>
+        <div style="font-size:.62rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.28rem">Até</div>
+        <input type="date" id="dash-filter-ate" onchange="renderDashboard()" style="background:var(--sp-surface2);border:1px solid var(--sp-border);border-radius:6px;padding:.38rem .6rem;color:var(--sp-white);font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none">
+      </div>
+      <div>
+        <div style="font-size:.62rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.28rem">Cliente</div>
+        <select id="dash-filter-cliente" onchange="renderDashboard()" style="background:var(--sp-surface2);border:1px solid var(--sp-border);border-radius:6px;padding:.38rem .6rem;color:var(--sp-white);font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;min-width:160px">
+          <option value="">Todos os clientes</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:.62rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.28rem">Produto</div>
+        <select id="dash-filter-produto" onchange="renderDashboard()" style="background:var(--sp-surface2);border:1px solid var(--sp-border);border-radius:6px;padding:.38rem .6rem;color:var(--sp-white);font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;min-width:160px">
+          <option value="">Todos os produtos</option>
+        </select>
+      </div>
+      <button onclick="limparFiltrosDash()" style="background:transparent;border:1px solid rgba(255,255,255,.15);color:#94a3b8;border-radius:6px;padding:.38rem .75rem;font-family:'DM Sans',sans-serif;font-size:.78rem;cursor:pointer;margin-left:auto">Limpar Filtros</button>
+    </div>
+
+    <!-- Conteúdo scrollável -->
+    <div style="overflow-y:auto;flex:1;min-height:0;padding:1rem 1.2rem" id="dash-content">
+
+      <!-- KPIs -->
+      <div id="dash-kpis" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:.7rem;margin-bottom:1.2rem"></div>
+
+      <!-- Gráficos - linha 1 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div style="background:var(--sp-surface2);border:1px solid var(--sp-border2);border-radius:10px;padding:1rem">
+          <div style="font-size:.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">📅 Faturamento por Mês</div>
+          <canvas id="chart-mensal" height="200"></canvas>
+        </div>
+        <div style="background:var(--sp-surface2);border:1px solid var(--sp-border2);border-radius:10px;padding:1rem">
+          <div style="font-size:.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">📦 Faturamento por Produto</div>
+          <canvas id="chart-produto" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- Gráficos - linha 2 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div style="background:var(--sp-surface2);border:1px solid var(--sp-border2);border-radius:10px;padding:1rem">
+          <div style="font-size:.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">👥 Top Clientes (Faturamento)</div>
+          <canvas id="chart-clientes" height="200"></canvas>
+        </div>
+        <div style="background:var(--sp-surface2);border:1px solid var(--sp-border2);border-radius:10px;padding:1rem">
+          <div style="font-size:.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">💹 Faturamento vs Custo vs Lucro</div>
+          <canvas id="chart-comparativo" height="200"></canvas>
+        </div>
+      </div>
+
+      <!-- Gráficos - linha 3 -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem">
+        <div style="background:var(--sp-surface2);border:1px solid var(--sp-border2);border-radius:10px;padding:1rem">
+          <div style="font-size:.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">📈 Evolução do Lucro (Área)</div>
+          <canvas id="chart-lucro" height="200"></canvas>
+        </div>
+        <div style="background:var(--sp-surface2);border:1px solid var(--sp-border2);border-radius:10px;padding:1rem">
+          <div style="font-size:.7rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;margin-bottom:.75rem">🎯 Margem % por Produto</div>
+          <canvas id="chart-margem" height="200"></canvas>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<!-- RELATÓRIO PDF MODAL -->
+<div class="modal-overlay" id="relatorio-overlay" style="align-items:flex-start;padding-top:2vh;padding-bottom:2vh">
+  <div class="modal" style="width:98vw;max-width:1100px;height:96vh;max-height:96vh;display:flex;flex-direction:column">
+    <div class="modal-header" style="background:rgba(239,68,68,.12);border-bottom:1px solid rgba(239,68,68,.3)">
+      <span class="modal-title" style="color:#f87171">📄 Gerar Relatório de Vendas (PDF)</span>
+      <button class="modal-close" onclick="closeRelatorioPDF()">×</button>
+    </div>
+
+    <!-- Filtros + ações -->
+    <div style="padding:.75rem 1.2rem;border-bottom:1px solid var(--sp-border2);display:flex;flex-wrap:wrap;gap:.65rem;align-items:flex-end;background:rgba(239,68,68,.04)">
+      <div>
+        <div style="font-size:.62rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.28rem">De</div>
+        <input type="date" id="rel-filter-de" oninput="renderRelatorio()" style="background:var(--sp-surface2);border:1px solid var(--sp-border);border-radius:6px;padding:.38rem .6rem;color:var(--sp-white);font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none">
+      </div>
+      <div>
+        <div style="font-size:.62rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.28rem">Até</div>
+        <input type="date" id="rel-filter-ate" oninput="renderRelatorio()" style="background:var(--sp-surface2);border:1px solid var(--sp-border);border-radius:6px;padding:.38rem .6rem;color:var(--sp-white);font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none">
+      </div>
+      <div>
+        <div style="font-size:.62rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.28rem">Cliente</div>
+        <select id="rel-filter-cliente" onchange="renderRelatorio()" style="background:var(--sp-surface2);border:1px solid var(--sp-border);border-radius:6px;padding:.38rem .6rem;color:var(--sp-white);font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;min-width:160px">
+          <option value="">Todos os clientes</option>
+        </select>
+      </div>
+      <div>
+        <div style="font-size:.62rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.28rem">Produto</div>
+        <select id="rel-filter-produto" onchange="renderRelatorio()" style="background:var(--sp-surface2);border:1px solid var(--sp-border);border-radius:6px;padding:.38rem .6rem;color:var(--sp-white);font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;min-width:160px">
+          <option value="">Todos os produtos</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:.5rem;margin-left:auto;align-items:flex-end">
+        <button onclick="relSelecionarTodos(true)"  style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#94a3b8;border-radius:6px;padding:.38rem .7rem;font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer">✅ Todos</button>
+        <button onclick="relSelecionarTodos(false)" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:#94a3b8;border-radius:6px;padding:.38rem .7rem;font-family:'DM Sans',sans-serif;font-size:.75rem;cursor:pointer">☐ Nenhum</button>
+        <button onclick="gerarPDFRelatorio()" style="background:rgba(239,68,68,.2);color:#f87171;border:1px solid rgba(239,68,68,.4);border-radius:20px;padding:.38rem 1.1rem;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer">🖨️ Imprimir / PDF</button>
+      </div>
+    </div>
+
+    <!-- Contador de seleção -->
+    <div id="rel-contador" style="padding:.45rem 1.2rem;font-size:.75rem;color:#94a3b8;border-bottom:1px solid var(--sp-border2);background:rgba(0,0,0,.15)">
+      Selecione as vendas que deseja incluir no relatório
+    </div>
+
+    <!-- Tabela scrollável -->
+    <div style="overflow-y:auto;flex:1;min-height:0" id="rel-body"></div>
+  </div>
+</div>
+
+<!-- CONTEÚDO PARA IMPRESSÃO DO RELATÓRIO (hidden, só aparece no print) -->
+<div id="relatorio-print-area" style="display:none"></div>
 
 <!-- REGISTRO DE VENDAS MODAL -->
 <div class="modal-overlay" id="registro-overlay" style="align-items:flex-start;padding-top:2vh;padding-bottom:2vh">
@@ -1228,6 +1383,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
       <span class="modal-title" style="color:#fcd34d">📊 Registro de Vendas</span>
       <div style="display:flex;gap:.6rem;align-items:center">
         <button onclick="novaVenda()" style="background:#e8a020;color:#000;border:none;border-radius:20px;padding:.35rem .9rem;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer">+ Nova Venda</button>
+        <button onclick="openRelatorioPDF()" style="background:rgba(239,68,68,.15);color:#f87171;border:1px solid rgba(239,68,68,.35);border-radius:20px;padding:.35rem .9rem;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer">📄 Relatório PDF</button>
         <button onclick="exportarExcel()" style="background:rgba(29,185,84,.15);color:var(--sp-green);border:1px solid rgba(29,185,84,.35);border-radius:20px;padding:.35rem .9rem;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer">⬇ Excel</button>
         <button onclick="exportarCSV()" style="background:rgba(29,185,84,.15);color:var(--sp-green);border:1px solid rgba(29,185,84,.35);border-radius:20px;padding:.35rem .9rem;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer">⬇ CSV</button>
         <button class="modal-close" onclick="closeRegistro()">×</button>
@@ -5427,6 +5583,538 @@ window.calcDiariasRV = calcDiariasRV;
 window.novaFatura = novaFatura;
 window.toggleFechamento = toggleFechamento;
 window.openRegistro = openRegistro;
+
+// ============================================================
+// ===== DASHBOARD & RELATÓRIOS ================================
+// ============================================================
+
+var _dashCharts = {};
+
+var DASH_COLORS = [
+  '#63b3ed','#68d391','#f6ad55','#fc8181','#b794f4',
+  '#76e4f7','#fbb6ce','#f6e05e','#9ae6b4','#feb2b2',
+  '#90cdf4','#c6f6d5','#feebc8','#fed7d7','#e9d8fd',
+];
+
+function openDashboard() {
+  document.getElementById('dashboard-overlay').classList.add('open');
+  setTimeout(renderDashboard, 80);
+}
+
+function closeDashboard() {
+  document.getElementById('dashboard-overlay').classList.remove('open');
+  Object.keys(_dashCharts).forEach(function(k){
+    try { _dashCharts[k].destroy(); } catch(e) {}
+  });
+  _dashCharts = {};
+}
+
+function limparFiltrosDash() {
+  document.getElementById('dash-filter-de').value = '';
+  document.getElementById('dash-filter-ate').value = '';
+  document.getElementById('dash-filter-cliente').value = '';
+  document.getElementById('dash-filter-produto').value = '';
+  renderDashboard();
+}
+
+function getDashVendas() {
+  var vendas = loadVendas();
+  var de      = document.getElementById('dash-filter-de')?.value || '';
+  var ate     = document.getElementById('dash-filter-ate')?.value || '';
+  var cliente = document.getElementById('dash-filter-cliente')?.value || '';
+  var produto = document.getElementById('dash-filter-produto')?.value || '';
+  return vendas.filter(function(v) {
+    if (de      && v.data < de)  return false;
+    if (ate     && v.data > ate) return false;
+    if (cliente && v.cliente !== cliente) return false;
+    if (produto && v.produto !== produto) return false;
+    return true;
+  });
+}
+
+function populateDashSelects() {
+  var vendas = loadVendas();
+  var clientes = [...new Set(vendas.map(function(v){ return v.cliente; }).filter(Boolean))].sort();
+  var produtos  = [...new Set(vendas.map(function(v){ return v.produto; }).filter(Boolean))].sort();
+
+  var selC = document.getElementById('dash-filter-cliente');
+  var selP = document.getElementById('dash-filter-produto');
+  var curC = selC.value, curP = selP.value;
+
+  selC.innerHTML = '<option value="">Todos os clientes</option>'
+    + clientes.map(function(c){ return '<option value="'+c+'"'+(c===curC?' selected':'')+'>'+c+'</option>'; }).join('');
+  selP.innerHTML = '<option value="">Todos os produtos</option>'
+    + produtos.map(function(p){ return '<option value="'+p+'"'+(p===curP?' selected':'')+'>'+p+'</option>'; }).join('');
+}
+
+function fmtBRLDash(v) {
+  return 'R$ ' + (v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+}
+
+function destroyChart(id) {
+  if (_dashCharts[id]) { try { _dashCharts[id].destroy(); } catch(e) {} delete _dashCharts[id]; }
+}
+
+function renderDashboard() {
+  populateDashSelects();
+  var vendas = getDashVendas();
+
+  // ── KPIs ──────────────────────────────────────────────────
+  var totFat    = vendas.reduce(function(s,v){ return s+(v.valorFinal||0); }, 0);
+  var totCusto  = vendas.reduce(function(s,v){ return s+(v.custo||0); }, 0);
+  var totLucro  = vendas.reduce(function(s,v){ return s+(v.margem||0); }, 0);
+  var totOver   = vendas.reduce(function(s,v){ return s+(v.over||0); }, 0);
+  var totComiss = vendas.reduce(function(s,v){ return s+(v.comissaoVal||0); }, 0);
+  var margemMed = totFat > 0 ? (totLucro/totFat*100) : 0;
+  var ticketMed = vendas.length > 0 ? totFat/vendas.length : 0;
+
+  var kpiDefs = [
+    { label:'💰 Faturamento',   val: fmtBRLDash(totFat),   cor:'#63b3ed', bg:'rgba(99,179,237,.12)' },
+    { label:'📉 Custo Total',   val: fmtBRLDash(totCusto), cor:'#fc8181', bg:'rgba(252,129,129,.1)' },
+    { label:'📈 Lucro Total',   val: fmtBRLDash(totLucro), cor:'#68d391', bg:'rgba(104,211,145,.1)' },
+    { label:'% Margem Média',   val: margemMed.toFixed(1)+'%', cor:'#b794f4', bg:'rgba(183,148,244,.1)' },
+    { label:'🛒 Nº de Vendas',  val: vendas.length,        cor:'#f6ad55', bg:'rgba(246,173,85,.1)' },
+    { label:'🎯 Ticket Médio',  val: fmtBRLDash(ticketMed), cor:'#76e4f7', bg:'rgba(118,228,247,.1)' },
+    { label:'⚡ Over Total',    val: fmtBRLDash(totOver),  cor:'#fbb6ce', bg:'rgba(251,182,206,.1)' },
+    { label:'🤝 Comissão',      val: fmtBRLDash(totComiss),cor:'#f6e05e', bg:'rgba(246,224,94,.1)' },
+  ];
+
+  document.getElementById('dash-kpis').innerHTML = kpiDefs.map(function(k) {
+    return '<div style="background:'+k.bg+';border:1px solid '+k.cor+'44;border-radius:10px;padding:.8rem 1rem">'
+      +'<div style="font-size:.6rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.07em;margin-bottom:.35rem">'+k.label+'</div>'
+      +'<div style="font-size:1.05rem;font-weight:800;color:'+k.cor+'">'+k.val+'</div>'
+      +'</div>';
+  }).join('');
+
+  // ── Agrupa por mês ────────────────────────────────────────
+  var meses = {};
+  vendas.forEach(function(v) {
+    if (!v.data) return;
+    var m = v.data.substring(0,7); // YYYY-MM
+    if (!meses[m]) meses[m] = { fat:0, custo:0, lucro:0 };
+    meses[m].fat   += v.valorFinal||0;
+    meses[m].custo += v.custo||0;
+    meses[m].lucro += v.margem||0;
+  });
+  var mesesKeys = Object.keys(meses).sort();
+  var mesesLabels = mesesKeys.map(function(m) {
+    var p = m.split('-');
+    var nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    return nomes[parseInt(p[1])-1]+'/'+p[0].substring(2);
+  });
+
+  // ── Chart 1: Faturamento por Mês (Line) ───────────────────
+  destroyChart('mensal');
+  var ctxM = document.getElementById('chart-mensal').getContext('2d');
+  _dashCharts['mensal'] = new Chart(ctxM, {
+    type: 'line',
+    data: {
+      labels: mesesLabels,
+      datasets: [{
+        label: 'Faturamento',
+        data: mesesKeys.map(function(m){ return meses[m].fat; }),
+        borderColor: '#63b3ed',
+        backgroundColor: 'rgba(99,179,237,.15)',
+        fill: true, tension: 0.4, pointBackgroundColor: '#63b3ed', pointRadius: 4,
+      }]
+    },
+    options: { responsive:true, plugins:{ legend:{ labels:{ color:'#94a3b8', font:{size:11} } } },
+      scales:{ x:{ ticks:{color:'#64748b',font:{size:10}}, grid:{color:'rgba(255,255,255,.05)'} },
+               y:{ ticks:{color:'#64748b',font:{size:10}, callback:function(v){ return 'R$'+v.toLocaleString('pt-BR'); }}, grid:{color:'rgba(255,255,255,.05)'} } } }
+  });
+
+  // ── Chart 2: Faturamento por Produto (Donut) ──────────────
+  var porProd = {};
+  vendas.forEach(function(v) {
+    var p = v.produto || 'Outros';
+    porProd[p] = (porProd[p]||0) + (v.valorFinal||0);
+  });
+  var prodKeys = Object.keys(porProd).sort(function(a,b){ return porProd[b]-porProd[a]; });
+  destroyChart('produto');
+  var ctxP = document.getElementById('chart-produto').getContext('2d');
+  _dashCharts['produto'] = new Chart(ctxP, {
+    type: 'doughnut',
+    data: {
+      labels: prodKeys,
+      datasets: [{ data: prodKeys.map(function(k){ return porProd[k]; }),
+        backgroundColor: DASH_COLORS.slice(0, prodKeys.length),
+        borderColor: '#1e1e2e', borderWidth: 2 }]
+    },
+    options: { responsive:true, plugins:{ legend:{ position:'right', labels:{ color:'#94a3b8', font:{size:10}, boxWidth:12, padding:8 } },
+      tooltip:{ callbacks:{ label:function(ctx){ return ' R$ '+ctx.raw.toLocaleString('pt-BR',{minimumFractionDigits:2}); } } } } }
+  });
+
+  // ── Chart 3: Top Clientes (Bar Horizontal) ─────────────────
+  var porCliente = {};
+  vendas.forEach(function(v) {
+    var c = v.cliente || '(sem cliente)';
+    porCliente[c] = (porCliente[c]||0) + (v.valorFinal||0);
+  });
+  var cliKeys = Object.keys(porCliente).sort(function(a,b){ return porCliente[b]-porCliente[a]; }).slice(0,8);
+  destroyChart('clientes');
+  var ctxC = document.getElementById('chart-clientes').getContext('2d');
+  _dashCharts['clientes'] = new Chart(ctxC, {
+    type: 'bar',
+    data: {
+      labels: cliKeys,
+      datasets: [{ label:'Faturamento', data: cliKeys.map(function(k){ return porCliente[k]; }),
+        backgroundColor: cliKeys.map(function(_,i){ return DASH_COLORS[i % DASH_COLORS.length]+'cc'; }),
+        borderRadius: 5 }]
+    },
+    options: { indexAxis:'y', responsive:true,
+      plugins:{ legend:{ display:false },
+        tooltip:{ callbacks:{ label:function(ctx){ return ' R$ '+ctx.raw.toLocaleString('pt-BR',{minimumFractionDigits:2}); } } } },
+      scales:{ x:{ ticks:{color:'#64748b',font:{size:10}, callback:function(v){ return 'R$'+v.toLocaleString('pt-BR'); }}, grid:{color:'rgba(255,255,255,.05)'} },
+               y:{ ticks:{color:'#94a3b8',font:{size:10}}, grid:{color:'rgba(255,255,255,.03)'} } } }
+  });
+
+  // ── Chart 4: Faturamento vs Custo vs Lucro por Mês (Bar) ──
+  destroyChart('comparativo');
+  var ctxCp = document.getElementById('chart-comparativo').getContext('2d');
+  _dashCharts['comparativo'] = new Chart(ctxCp, {
+    type: 'bar',
+    data: {
+      labels: mesesLabels,
+      datasets: [
+        { label:'Faturamento', data: mesesKeys.map(function(m){ return meses[m].fat; }),   backgroundColor:'rgba(99,179,237,.75)',  borderRadius:4 },
+        { label:'Custo',       data: mesesKeys.map(function(m){ return meses[m].custo; }), backgroundColor:'rgba(252,129,129,.75)', borderRadius:4 },
+        { label:'Lucro',       data: mesesKeys.map(function(m){ return meses[m].lucro; }), backgroundColor:'rgba(104,211,145,.75)', borderRadius:4 },
+      ]
+    },
+    options: { responsive:true,
+      plugins:{ legend:{ labels:{ color:'#94a3b8', font:{size:10} } },
+        tooltip:{ callbacks:{ label:function(ctx){ return ' R$ '+ctx.raw.toLocaleString('pt-BR',{minimumFractionDigits:2}); } } } },
+      scales:{ x:{ ticks:{color:'#64748b',font:{size:10}}, grid:{color:'rgba(255,255,255,.05)'} },
+               y:{ ticks:{color:'#64748b',font:{size:10}, callback:function(v){ return 'R$'+v.toLocaleString('pt-BR'); }}, grid:{color:'rgba(255,255,255,.05)'} } } }
+  });
+
+  // ── Chart 5: Evolução do Lucro - Área ─────────────────────
+  destroyChart('lucro');
+  var ctxL = document.getElementById('chart-lucro').getContext('2d');
+  _dashCharts['lucro'] = new Chart(ctxL, {
+    type: 'line',
+    data: {
+      labels: mesesLabels,
+      datasets: [
+        { label:'Lucro',       data: mesesKeys.map(function(m){ return meses[m].lucro; }), borderColor:'#68d391', backgroundColor:'rgba(104,211,145,.2)', fill:true, tension:0.4, pointBackgroundColor:'#68d391', pointRadius:4 },
+        { label:'Faturamento', data: mesesKeys.map(function(m){ return meses[m].fat; }),   borderColor:'#63b3ed', backgroundColor:'rgba(99,179,237,.08)',  fill:true, tension:0.4, pointBackgroundColor:'#63b3ed', pointRadius:3 },
+      ]
+    },
+    options: { responsive:true,
+      plugins:{ legend:{ labels:{ color:'#94a3b8', font:{size:10} } },
+        tooltip:{ callbacks:{ label:function(ctx){ return ' R$ '+ctx.raw.toLocaleString('pt-BR',{minimumFractionDigits:2}); } } } },
+      scales:{ x:{ ticks:{color:'#64748b',font:{size:10}}, grid:{color:'rgba(255,255,255,.05)'} },
+               y:{ ticks:{color:'#64748b',font:{size:10}, callback:function(v){ return 'R$'+v.toLocaleString('pt-BR'); }}, grid:{color:'rgba(255,255,255,.05)'} } } }
+  });
+
+  // ── Chart 6: Margem % por Produto (Pizza) ─────────────────
+  var porProdMarg = {};
+  var countProd   = {};
+  vendas.forEach(function(v) {
+    var p = v.produto || 'Outros';
+    porProdMarg[p] = (porProdMarg[p]||0) + (v.margemPct||0);
+    countProd[p]   = (countProd[p]||0) + 1;
+  });
+  var prodMargKeys = Object.keys(porProdMarg);
+  var prodMargVals = prodMargKeys.map(function(k){ return parseFloat((porProdMarg[k]/countProd[k]).toFixed(1)); });
+  destroyChart('margem');
+  var ctxMg = document.getElementById('chart-margem').getContext('2d');
+  _dashCharts['margem'] = new Chart(ctxMg, {
+    type: 'pie',
+    data: {
+      labels: prodMargKeys,
+      datasets: [{ data: prodMargVals,
+        backgroundColor: DASH_COLORS.slice(0, prodMargKeys.length),
+        borderColor:'#1e1e2e', borderWidth:2 }]
+    },
+    options: { responsive:true,
+      plugins:{ legend:{ position:'right', labels:{ color:'#94a3b8', font:{size:10}, boxWidth:12, padding:8 } },
+        tooltip:{ callbacks:{ label:function(ctx){ return ' '+ctx.raw.toFixed(1)+'%'; } } } } }
+  });
+}
+
+function openDashboard() {
+  document.getElementById('dashboard-overlay').classList.add('open');
+  setTimeout(renderDashboard, 100);
+}
+function closeDashboard() {
+  document.getElementById('dashboard-overlay').classList.remove('open');
+  Object.keys(_dashCharts).forEach(function(k){ try { _dashCharts[k].destroy(); } catch(e){} });
+  _dashCharts = {};
+}
+document.addEventListener('DOMContentLoaded', function() {
+  var ov = document.getElementById('dashboard-overlay');
+  if (ov) ov.addEventListener('click', function(e){ if(e.target===ov) closeDashboard(); });
+});
+window.openDashboard    = openDashboard;
+window.closeDashboard   = closeDashboard;
+window.renderDashboard  = renderDashboard;
+window.limparFiltrosDash = limparFiltrosDash;
+
+// ============================================================
+// ===== RELATÓRIO DE VENDAS — PDF ============================
+// ============================================================
+
+function openRelatorioPDF() {
+  document.getElementById('relatorio-overlay').classList.add('open');
+  // popula selects de filtro
+  var vendas   = loadVendas();
+  var clientes = [...new Set(vendas.map(function(v){ return v.cliente; }).filter(Boolean))].sort();
+  var produtos  = [...new Set(vendas.map(function(v){ return v.produto;  }).filter(Boolean))].sort();
+  var selC = document.getElementById('rel-filter-cliente');
+  var selP = document.getElementById('rel-filter-produto');
+  selC.innerHTML = '<option value="">Todos os clientes</option>'
+    + clientes.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  selP.innerHTML = '<option value="">Todos os produtos</option>'
+    + produtos.map(function(p){ return '<option value="'+p+'">'+p+'</option>'; }).join('');
+  setTimeout(renderRelatorio, 60);
+}
+
+function closeRelatorioPDF() {
+  document.getElementById('relatorio-overlay').classList.remove('open');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  var ov = document.getElementById('relatorio-overlay');
+  if (ov) ov.addEventListener('click', function(e){ if(e.target===ov) closeRelatorioPDF(); });
+});
+
+function getRelVendas() {
+  var vendas  = loadVendas();
+  var de      = document.getElementById('rel-filter-de')?.value || '';
+  var ate     = document.getElementById('rel-filter-ate')?.value || '';
+  var cliente = document.getElementById('rel-filter-cliente')?.value || '';
+  var produto = document.getElementById('rel-filter-produto')?.value || '';
+  return vendas.filter(function(v) {
+    if (de      && v.data < de)  return false;
+    if (ate     && v.data > ate) return false;
+    if (cliente && v.cliente !== cliente) return false;
+    if (produto && v.produto  !== produto) return false;
+    return true;
+  });
+}
+
+function relSelecionarTodos(sel) {
+  document.querySelectorAll('.rel-check').forEach(function(cb){ cb.checked = sel; });
+  atualizarContadorRel();
+}
+
+function atualizarContadorRel() {
+  var total = document.querySelectorAll('.rel-check').length;
+  var sel   = document.querySelectorAll('.rel-check:checked').length;
+  var el    = document.getElementById('rel-contador');
+  if (el) el.textContent = sel + ' de ' + total + ' venda(s) selecionada(s) para o relatório';
+}
+
+function renderRelatorio() {
+  var vendas = getRelVendas();
+  var body   = document.getElementById('rel-body');
+  if (!body) return;
+
+  var fmtD = function(d) {
+    if (!d) return '—';
+    var p = d.split('-'); return p.length===3 ? p[2]+'/'+p[1]+'/'+p[0] : d;
+  };
+  var fmtR = function(v) {
+    return 'R$ ' + (v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.');
+  };
+
+  if (vendas.length === 0) {
+    body.innerHTML = '<div style="text-align:center;padding:3rem;color:#64748b;font-size:.88rem">Nenhuma venda encontrada com os filtros aplicados.</div>';
+    document.getElementById('rel-contador').textContent = '0 vendas encontradas';
+    return;
+  }
+
+  var TH = 'padding:.45rem .55rem;text-align:left;color:#94a3b8;font-weight:700;font-size:.62rem;text-transform:uppercase;letter-spacing:.05em;background:var(--sp-surface2);position:sticky;top:0;white-space:nowrap;border-bottom:1px solid var(--sp-border2)';
+  var html = '<table style="width:100%;border-collapse:collapse;font-size:.75rem">'
+    + '<thead><tr>'
+    + '<th style="'+TH+';width:36px;text-align:center"><input type="checkbox" id="rel-check-all" onclick="relSelecionarTodos(this.checked)" style="cursor:pointer"></th>'
+    + '<th style="'+TH+'">Data</th>'
+    + '<th style="'+TH+'">Voucher</th>'
+    + '<th style="'+TH+'">Cliente</th>'
+    + '<th style="'+TH+'">Produto</th>'
+    + '<th style="'+TH+'">Fornecedor</th>'
+    + '<th style="'+TH+'">Destino</th>'
+    + '<th style="'+TH+';text-align:right">Vl. Final</th>'
+    + '<th style="'+TH+';text-align:right">Custo</th>'
+    + '<th style="'+TH+';text-align:right">Lucro</th>'
+    + '<th style="'+TH+';text-align:right">Margem %</th>'
+    + '</tr></thead><tbody>';
+
+  vendas.forEach(function(v, i) {
+    var mCor  = (v.margem||0) >= 0 ? '#68d391' : '#fc8181';
+    var bg    = i%2===0 ? '' : 'background:rgba(255,255,255,.02)';
+    html += '<tr style="border-bottom:1px solid var(--sp-border2);'+bg+'" onmouseover="this.style.background=\'var(--sp-hover)\'" onmouseout="this.style.background=\''+(i%2===0?'':'rgba(255,255,255,.02)')+'\'">'
+      + '<td style="padding:.38rem .5rem;text-align:center"><input type="checkbox" class="rel-check" data-id="'+v.id+'" checked onclick="atualizarContadorRel()" style="cursor:pointer"></td>'
+      + '<td style="padding:.38rem .5rem;color:#94a3b8;font-size:.72rem;white-space:nowrap">'+fmtD(v.data)+'</td>'
+      + '<td style="padding:.38rem .5rem"><span style="background:rgba(232,160,32,.18);color:#fcd34d;border-radius:4px;padding:.05rem .35rem;font-size:.68rem;font-weight:700;font-family:monospace">'+(v.voucher||'—')+'</span></td>'
+      + '<td style="padding:.38rem .5rem;font-weight:600;color:#f1f5f9;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(v.cliente||'—')+'</td>'
+      + '<td style="padding:.38rem .5rem;color:#94a3b8;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(v.produto||'—')+'</td>'
+      + '<td style="padding:.38rem .5rem;color:#94a3b8;max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(v.fornecedor||'—')+'</td>'
+      + '<td style="padding:.38rem .5rem;color:#94a3b8;white-space:nowrap">'+(v.destino||'—')+'</td>'
+      + '<td style="padding:.38rem .5rem;text-align:right;color:#68d391;font-weight:600">'+fmtR(v.valorFinal)+'</td>'
+      + '<td style="padding:.38rem .5rem;text-align:right;color:#fc8181">'+fmtR(v.custo)+'</td>'
+      + '<td style="padding:.38rem .5rem;text-align:right;font-weight:600;color:'+mCor+'">'+fmtR(v.margem)+'</td>'
+      + '<td style="padding:.38rem .5rem;text-align:right;color:'+mCor+'">'+((v.margemPct||0).toFixed(1))+'%</td>'
+      + '</tr>';
+  });
+  html += '</tbody></table>';
+  body.innerHTML = html;
+  atualizarContadorRel();
+}
+
+function gerarPDFRelatorio() {
+  // Coleta IDs selecionados
+  var selecionados = [];
+  document.querySelectorAll('.rel-check:checked').forEach(function(cb){
+    selecionados.push(cb.getAttribute('data-id'));
+  });
+  if (selecionados.length === 0) { toast('⚠️ Selecione ao menos uma venda'); return; }
+
+  var vendas = loadVendas().filter(function(v){ return selecionados.includes(v.id); });
+
+  var fmtD = function(d) { if(!d) return '—'; var p=d.split('-'); return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:d; };
+  var fmtR = function(v) { return 'R$ '+(v||0).toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'); };
+  var hoje = new Date().toLocaleDateString('pt-BR');
+
+  // Totais
+  var totFat    = vendas.reduce(function(s,v){ return s+(v.valorFinal||0); }, 0);
+  var totCusto  = vendas.reduce(function(s,v){ return s+(v.custo||0); }, 0);
+  var totLucro  = vendas.reduce(function(s,v){ return s+(v.margem||0); }, 0);
+  var totOver   = vendas.reduce(function(s,v){ return s+(v.over||0); }, 0);
+  var totComiss = vendas.reduce(function(s,v){ return s+(v.comissaoVal||0); }, 0);
+  var margemMed = totFat > 0 ? (totLucro/totFat*100) : 0;
+
+  // Filtros aplicados (para cabeçalho)
+  var de  = document.getElementById('rel-filter-de')?.value || '';
+  var ate = document.getElementById('rel-filter-ate')?.value || '';
+  var cli = document.getElementById('rel-filter-cliente')?.value || '';
+  var prd = document.getElementById('rel-filter-produto')?.value || '';
+  var filtroStr = [];
+  if (de||ate) filtroStr.push('Período: '+(de?fmtD(de):'início')+' → '+(ate?fmtD(ate):'hoje'));
+  if (cli) filtroStr.push('Cliente: '+cli);
+  if (prd) filtroStr.push('Produto: '+prd);
+
+  // Linhas da tabela
+  var linhas = vendas.map(function(v, i) {
+    var mCor = (v.margem||0) >= 0 ? '#166534' : '#991b1b';
+    var bg   = i%2===0 ? '#ffffff' : '#f8fafc';
+    return '<tr style="background:'+bg+'">'
+      + '<td style="padding:.4rem .5rem;border:1px solid #e2e8f0;font-size:.7rem;color:#374151;white-space:nowrap">'+fmtD(v.data)+'</td>'
+      + '<td style="padding:.4rem .5rem;border:1px solid #e2e8f0;font-size:.7rem;font-weight:700;color:#b45309;font-family:monospace">'+(v.voucher||'—')+'</td>'
+      + '<td style="padding:.4rem .5rem;border:1px solid #e2e8f0;font-size:.7rem;font-weight:700;color:#1e293b">'+(v.cliente||'—')+'</td>'
+      + '<td style="padding:.4rem .5rem;border:1px solid #e2e8f0;font-size:.7rem;color:#475569">'+(v.produto||'—')+'</td>'
+      + '<td style="padding:.4rem .5rem;border:1px solid #e2e8f0;font-size:.7rem;color:#475569">'+(v.fornecedor||'—')+'</td>'
+      + '<td style="padding:.4rem .5rem;border:1px solid #e2e8f0;font-size:.7rem;color:#475569">'+(v.destino||'—')+'</td>'
+      + '<td style="padding:.4rem .5rem;border:1px solid #e2e8f0;font-size:.7rem;text-align:right;font-weight:700;color:#166534">'+fmtR(v.valorFinal)+'</td>'
+      + '<td style="padding:.4rem .5rem;border:1px solid #e2e8f0;font-size:.7rem;text-align:right;color:#991b1b">'+fmtR(v.custo)+'</td>'
+      + '<td style="padding:.4rem .5rem;border:1px solid #e2e8f0;font-size:.7rem;text-align:right;font-weight:700;color:'+mCor+'">'+fmtR(v.margem)+'</td>'
+      + '<td style="padding:.4rem .5rem;border:1px solid #e2e8f0;font-size:.7rem;text-align:right;color:'+mCor+'">'+((v.margemPct||0).toFixed(1))+'%</td>'
+      + '<td style="padding:.4rem .5rem;border:1px solid #e2e8f0;font-size:.7rem;text-align:right;color:#92400e">'+fmtR(v.over)+'</td>'
+      + '<td style="padding:.4rem .5rem;border:1px solid #e2e8f0;font-size:.7rem;text-align:right;color:#1d4ed8">'+fmtR(v.comissaoVal)+'</td>'
+      + '</tr>';
+  }).join('');
+
+  var TH_PDF = 'padding:.4rem .5rem;border:1px solid #d1d5db;background:#1a1a2e;color:#ffffff;font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap';
+
+  var printContent =
+    '<div style="font-family:Arial,sans-serif;padding:0;background:white;color:#1a1a2e">'
+
+    // Cabeçalho
+    + '<div style="background:#0f2027;padding:1rem 1.5rem;display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">'
+      + '<div>'
+        + '<div style="font-size:1.1rem;font-weight:900;color:white;letter-spacing:.05em">MAIS VIAGENS</div>'
+        + '<div style="font-size:.65rem;color:#1db954;font-weight:700;letter-spacing:.15em;text-transform:uppercase">Agência de Turismo</div>'
+        + '<div style="font-size:.6rem;color:#94a3b8;margin-top:.2rem">(48) 99969-7274 · viajemaisviagens@gmail.com</div>'
+      + '</div>'
+      + '<div style="text-align:right">'
+        + '<div style="font-size:.85rem;font-weight:800;color:#fcd34d">RELATÓRIO DE VENDAS</div>'
+        + '<div style="font-size:.65rem;color:#94a3b8;margin-top:.2rem">Emitido em: '+hoje+'</div>'
+        + (filtroStr.length ? '<div style="font-size:.62rem;color:#94a3b8;margin-top:.15rem">'+filtroStr.join(' · ')+'</div>' : '')
+        + '<div style="font-size:.65rem;color:#94a3b8;margin-top:.1rem">'+vendas.length+' venda(s)</div>'
+      + '</div>'
+    + '</div>'
+
+    // KPIs resumo
+    + '<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:.5rem;margin-bottom:1rem">'
+      + [
+          ['Faturamento Total', fmtR(totFat),    '#166534','#f0fdf4','#dcfce7'],
+          ['Custo Total',       fmtR(totCusto),  '#991b1b','#fef2f2','#fee2e2'],
+          ['Lucro Total',       fmtR(totLucro),  '#1e40af','#eff6ff','#dbeafe'],
+          ['Margem Média',      margemMed.toFixed(1)+'%','#6b21a8','#faf5ff','#f3e8ff'],
+          ['Over Total',        fmtR(totOver),   '#92400e','#fffbeb','#fef3c7'],
+          ['Comissão Total',    fmtR(totComiss), '#0e7490','#ecfeff','#cffafe'],
+        ].map(function(k){
+          return '<div style="border:1px solid '+k[4]+';border-radius:6px;padding:.5rem .6rem;background:'+k[3]+'">'
+            +'<div style="font-size:.55rem;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.2rem">'+k[0]+'</div>'
+            +'<div style="font-size:.82rem;font-weight:800;color:'+k[2]+'">'+k[1]+'</div>'
+          +'</div>';
+        }).join('')
+    + '</div>'
+
+    // Tabela de vendas
+    + '<table style="width:100%;border-collapse:collapse">'
+      + '<thead><tr>'
+        + '<th style="'+TH_PDF+'">Data</th>'
+        + '<th style="'+TH_PDF+'">Voucher</th>'
+        + '<th style="'+TH_PDF+'">Cliente</th>'
+        + '<th style="'+TH_PDF+'">Produto</th>'
+        + '<th style="'+TH_PDF+'">Fornecedor</th>'
+        + '<th style="'+TH_PDF+'">Destino</th>'
+        + '<th style="'+TH_PDF+';text-align:right">Vl. Final</th>'
+        + '<th style="'+TH_PDF+';text-align:right">Custo</th>'
+        + '<th style="'+TH_PDF+';text-align:right">Lucro</th>'
+        + '<th style="'+TH_PDF+';text-align:right">Margem %</th>'
+        + '<th style="'+TH_PDF+';text-align:right">Over</th>'
+        + '<th style="'+TH_PDF+';text-align:right">Comissão</th>'
+      + '</tr></thead>'
+      + '<tbody>'+linhas+'</tbody>'
+
+      // Linha de totais
+      + '<tfoot><tr style="background:#0f2027">'
+        + '<td colspan="6" style="padding:.5rem;border:1px solid #334155;font-size:.72rem;font-weight:700;color:#fcd34d">TOTAIS ('+vendas.length+' venda(s))</td>'
+        + '<td style="padding:.5rem;border:1px solid #334155;text-align:right;font-size:.72rem;font-weight:800;color:#68d391">'+fmtR(totFat)+'</td>'
+        + '<td style="padding:.5rem;border:1px solid #334155;text-align:right;font-size:.72rem;font-weight:800;color:#fc8181">'+fmtR(totCusto)+'</td>'
+        + '<td style="padding:.5rem;border:1px solid #334155;text-align:right;font-size:.72rem;font-weight:800;color:#68d391">'+fmtR(totLucro)+'</td>'
+        + '<td style="padding:.5rem;border:1px solid #334155;text-align:right;font-size:.72rem;font-weight:700;color:#b794f4">'+margemMed.toFixed(1)+'%</td>'
+        + '<td style="padding:.5rem;border:1px solid #334155;text-align:right;font-size:.72rem;font-weight:700;color:#fcd34d">'+fmtR(totOver)+'</td>'
+        + '<td style="padding:.5rem;border:1px solid #334155;text-align:right;font-size:.72rem;font-weight:700;color:#76e4f7">'+fmtR(totComiss)+'</td>'
+      + '</tr></tfoot>'
+    + '</table>'
+
+    // Rodapé
+    + '<div style="margin-top:1rem;padding-top:.7rem;border-top:2px solid #e2e8f0;display:flex;justify-content:space-between;font-size:.58rem;color:#94a3b8">'
+      + '<span>CNPJ: 49.427.950/0001-96 · Mais Viagens Agência de Turismo Ltda · Florianópolis, SC</span>'
+      + '<span>Documento gerado em '+hoje+' · Uso interno</span>'
+    + '</div>'
+    + '</div>';
+
+  // Injeta e imprime
+  var printArea = document.getElementById('relatorio-print-area');
+  printArea.innerHTML = printContent;
+
+  function cleanup() {
+    document.body.classList.remove('printing-relatorio');
+    printArea.innerHTML = '';
+    window.removeEventListener('afterprint', cleanup);
+  }
+  window.addEventListener('afterprint', cleanup);
+  setTimeout(function() {
+    document.body.classList.remove('printing-relatorio');
+    printArea.innerHTML = '';
+    window.removeEventListener('afterprint', cleanup);
+  }, 8000);
+
+  document.body.classList.add('printing-relatorio');
+  window.print();
+}
+
+window.openRelatorioPDF  = openRelatorioPDF;
+window.closeRelatorioPDF = closeRelatorioPDF;
+window.renderRelatorio   = renderRelatorio;
+window.relSelecionarTodos = relSelecionarTodos;
+window.atualizarContadorRel = atualizarContadorRel;
+window.gerarPDFRelatorio = gerarPDFRelatorio;
 window.closeRegistro = closeRegistro;
 window.novaVenda = novaVenda;
 window.salvarVenda = salvarVenda;
