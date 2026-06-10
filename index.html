@@ -1700,6 +1700,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
             <div><div class="sp-label">Validade / Período</div><input type="text" class="sp-input" id="rv-ot-validade" placeholder="Ex: 10/07 a 20/07/2025"></div>
           </div>
           <div><div class="sp-label">Detalhes Adicionais</div><textarea class="sp-input" id="rv-ot-detalhes" placeholder="Descreva detalhes específicos deste serviço..." style="min-height:50px;resize:vertical"></textarea></div>
+          <div style="border-top:1px solid rgba(148,163,184,.2);padding-top:.7rem">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+              <div class="sp-label" style="margin:0">👥 Pessoas / Beneficiários</div>
+              <button type="button" onclick="addPessoaRV('ot','pessoa')" style="background:rgba(148,163,184,.12);border:1px solid rgba(148,163,184,.4);border-radius:20px;padding:.28rem .7rem;color:#cbd5e1;font-family:'DM Sans',sans-serif;font-size:.73rem;font-weight:600;cursor:pointer">+ Adicionar Pessoa</button>
+            </div>
+            <div id="rv-ot-pax-container" style="display:flex;flex-direction:column;gap:.4rem"></div>
+          </div>
         </div>
       </div>
 
@@ -3228,7 +3235,7 @@ function novaVenda(prefill) {
   var extraCont = document.getElementById('rv-ae-extra-passagens-container');
   if (extraCont) { extraCont.innerHTML = ''; _rvPassagemCount = 0; _rvTrechoExtraCount = {}; _rvPaxExtraCount = {}; }
   // Limpa containers de pessoas de todos os produtos
-  ['ht','sg','cz','ex','tr','as','bg'].forEach(function(p) {
+  ['ht','sg','cz','ex','tr','as','bg','ot'].forEach(function(p) {
     var c = document.getElementById('rv-'+p+'-pax-container');
     if (c) c.innerHTML = '';
     if (_rvPessoaCounters) _rvPessoaCounters[p] = 0;
@@ -3823,6 +3830,7 @@ function getProdutoDetalheRV() {
       tipo:      document.getElementById('rv-ot-tipo')?.value||'',
       validade:  document.getElementById('rv-ot-validade')?.value||'',
       detalhes:  document.getElementById('rv-ot-detalhes')?.value||'',
+      pessoas:   getPessoasRV('ot'),
     };
   }
   return d;
@@ -3927,6 +3935,7 @@ function setProdutoDetalheRV(produto, detalhe) {
     if(d.tipo)     document.getElementById('rv-ot-tipo').value     = d.tipo;
     if(d.validade) document.getElementById('rv-ot-validade').value = d.validade;
     if(d.detalhes) document.getElementById('rv-ot-detalhes').value = d.detalhes;
+    if(d.pessoas)  setPessoasRV('ot', d.pessoas);
   }
 }
 
@@ -4341,6 +4350,7 @@ function gerarVoucher(id) {
     else if (v.produto === 'Transfer')         { pessoasDetalhe = dP.pessoas || []; pessoasLabel = 'Passageiro(s)'; }
     else if (v.produto === 'Marcação de Assento') { pessoasDetalhe = dP.pessoas || []; pessoasLabel = 'Passageiro(s)'; }
     else if (v.produto === 'Franquia Bagagem') { pessoasDetalhe = dP.pessoas || []; pessoasLabel = 'Passageiro(s)'; }
+    else if (v.produto === 'Outros' || !pessoasLabel)    { pessoasDetalhe = dP.pessoas || []; pessoasLabel = 'Pessoas / Beneficiários'; }
   }
 
   var pessoasBloco = document.getElementById('vch-pessoas-bloco');
@@ -4678,11 +4688,11 @@ function renderVendas() {
     return;
   }
 
-  // Cabeçalhos compactos — apenas colunas essenciais visíveis de uma vez
   var TH = 'padding:.42rem .5rem;text-align:left;color:var(--sp-gray);font-weight:600;font-size:.63rem;text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;background:var(--sp-surface2);position:sticky;top:0;z-index:1';
   var THR = TH + ';text-align:right';
   var html = '<table style="width:100%;border-collapse:collapse;font-size:.75rem;table-layout:fixed">' +
     '<colgroup>' +
+    '<col style="width:106px">' +  // Ações
     '<col style="width:80px">' +   // Data
     '<col style="width:68px">' +   // Voucher
     '<col style="width:60px">' +   // Fatura
@@ -4692,9 +4702,9 @@ function renderVendas() {
     '<col style="width:80px">' +   // Valor Final
     '<col style="width:85px">' +   // Margem
     '<col style="width:75px">' +   // Comissão
-    '<col style="width:90px">' +   // Ações
     '</colgroup>' +
     '<thead><tr>' +
+    '<th style="'+TH+';text-align:center">Ações</th>' +
     '<th style="'+TH+'">Data</th>' +
     '<th style="'+TH+'">Voucher</th>' +
     '<th style="'+TH+'">Fatura</th>' +
@@ -4704,7 +4714,6 @@ function renderVendas() {
     '<th style="'+THR+'">Vl. Final</th>' +
     '<th style="'+THR+'">Margem</th>' +
     '<th style="'+THR+'">Comissão</th>' +
-    '<th style="'+TH+';text-align:center">Ações</th>' +
     '</tr></thead><tbody>';
 
   filtered.forEach(function(v) {
@@ -4712,6 +4721,12 @@ function renderVendas() {
     var TD  = 'padding:.38rem .5rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle;max-width:0';
     var TDR = TD + ';text-align:right';
     html += '<tr style="border-bottom:1px solid var(--sp-border2)" onmouseover="this.style.background=\'var(--sp-hover)\'" onmouseout="this.style.background=\'\'">' +
+      '<td style="padding:.38rem .4rem;text-align:center;white-space:nowrap;vertical-align:middle">' +
+        '<button onclick="gerarVoucher(\'' + v.id + '\')" style="background:rgba(29,185,84,.15);border:none;color:#1db954;border-radius:5px;padding:.28rem .38rem;cursor:pointer;font-size:.95rem;margin-right:.15rem" title="Gerar Voucher">🎫</button>' +
+        '<button onclick="visualizarVenda(\'' + v.id + '\')" style="background:rgba(99,179,237,.15);border:none;color:#63b3ed;border-radius:5px;padding:.28rem .38rem;cursor:pointer;font-size:.95rem;margin-right:.15rem" title="Visualizar">👁</button>' +
+        '<button onclick="editarVenda(\'' + v.id + '\')" style="background:rgba(255,255,255,.08);border:none;color:#94a3b8;border-radius:5px;padding:.28rem .38rem;cursor:pointer;font-size:.95rem;margin-right:.15rem" title="Editar">✏️</button>' +
+        '<button onclick="excluirVenda(\'' + v.id + '\')" style="background:rgba(226,33,52,.12);border:none;color:#f87171;border-radius:5px;padding:.28rem .38rem;cursor:pointer;font-size:.95rem" title="Excluir">🗑️</button>' +
+      '</td>' +
       '<td style="'+TD+';color:var(--sp-gray);font-size:.72rem">'+fmtDate(v.data)+'</td>' +
       '<td style="'+TD+'"><span style="background:rgba(232,160,32,.2);color:#fcd34d;border-radius:4px;padding:.08rem .35rem;font-size:.7rem;font-weight:700;font-family:monospace">'+(v.voucher||'—')+'</span></td>' +
       '<td style="'+TD+'"><span style="background:rgba(29,185,84,.12);color:var(--sp-green);border-radius:4px;padding:.08rem .35rem;font-size:.7rem;font-weight:600">'+(v.fatura||'—')+'</span></td>' +
@@ -4721,12 +4736,6 @@ function renderVendas() {
       '<td style="'+TDR+';color:var(--sp-green);font-weight:600">'+fmtBRL(v.valorFinal)+'</td>' +
       '<td style="'+TDR+';color:'+mCor+';font-weight:600">'+fmtBRL(v.margem)+'<br><span style="font-size:.65rem;opacity:.8">'+((v.margemPct||0).toFixed(1))+'%</span></td>' +
       '<td style="'+TDR+';color:#fcd34d">'+fmtBRL(v.comissaoVal)+'<br><span style="font-size:.65rem;opacity:.8">'+((v.comissaoPct||0).toFixed(1))+'%</span></td>' +
-      '<td style="padding:.38rem .4rem;text-align:center;white-space:nowrap;vertical-align:middle">' +
-        '<button onclick="gerarVoucher(\'' + v.id + '\')" style="background:rgba(29,185,84,.12);border:none;color:#1db954;border-radius:4px;padding:.2rem .4rem;cursor:pointer;font-size:.72rem;margin-right:.12rem" title="Voucher PDF">🎫</button>' +
-        '<button onclick="visualizarVenda(\'' + v.id + '\')" style="background:rgba(99,179,237,.1);border:none;color:#63b3ed;border-radius:4px;padding:.2rem .4rem;cursor:pointer;font-size:.72rem;margin-right:.12rem" title="Visualizar">👁</button>' +
-        '<button onclick="editarVenda(\'' + v.id + '\')" style="background:rgba(255,255,255,.06);border:none;color:#94a3b8;border-radius:4px;padding:.2rem .4rem;cursor:pointer;font-size:.72rem;margin-right:.12rem" title="Editar">✏</button>' +
-        '<button onclick="excluirVenda(\'' + v.id + '\')" style="background:rgba(226,33,52,.1);border:none;color:#f87171;border-radius:4px;padding:.2rem .4rem;cursor:pointer;font-size:.72rem" title="Excluir">🗑</button>' +
-      '</td>' +
     '</tr>';
   });
   html += '</tbody></table>';
