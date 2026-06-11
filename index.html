@@ -5228,7 +5228,8 @@ async function handleAIFile(itemId) {
     const systemPrompt =
       'Você é um assistente especializado em extrair dados de documentos de viagem. ' +
       'Analise o documento e extraia as informações. ' +
-      'Responda SOMENTE com JSON válido, sem markdown, sem texto extra.';
+      'IMPORTANTE: Responda SOMENTE com o objeto JSON puro, sem nenhum texto antes ou depois, ' +
+      'sem blocos de código, sem markdown, sem explicações. Apenas o JSON.';
 
     let userPrompt;
     if (isHotel) {
@@ -5299,9 +5300,18 @@ async function handleAIFile(itemId) {
     const data = await response.json();
     const rawText = (data.content || []).find(b => b.type === 'text')?.text || '';
 
-    // Extract JSON from response
-    const jsonMatch = rawText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('Resposta da IA não contém JSON válido');
+    // Extrai JSON da resposta — remove markdown se houver
+    let jsonStr = rawText
+      .replace(/```json\s*/gi, '')   // remove ```json
+      .replace(/```\s*/g, '')        // remove ```
+      .trim();
+
+    // Tenta encontrar o objeto JSON na resposta
+    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('Resposta bruta da IA:', rawText);
+      throw new Error('Resposta da IA não contém JSON válido. Tente com uma imagem mais nítida.');
+    }
     const extracted = JSON.parse(jsonMatch[0]);
 
     let filled = 0;
