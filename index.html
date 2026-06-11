@@ -1202,7 +1202,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
         </div>
 
         <!-- Grid de dados -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:1.2rem" id="vch-grid">
+        <div style="margin-bottom:1.2rem" id="vch-grid">
         </div>
 
         <!-- Valor total -->
@@ -3177,14 +3177,16 @@ function renderHistorico(filtro) {
 
 function deletarFatura(e, id) {
   e.stopPropagation();
-  if (!confirm('Remover esta fatura do histórico?')) return;
+  if (!confirm('Deseja mesmo excluir esta fatura do histórico?\nEsta ação não poderá ser desfeita.')) return;
+  if (!confirm('Tem certeza? A fatura será excluída permanentemente do histórico.')) return;
   saveHistorico(loadHistorico().filter(h => h.id !== id));
   renderHistorico(document.getElementById('hist-search-input')?.value || '');
   toast('🗑️ Fatura removida do histórico');
 }
 
 function limparHistorico() {
-  if (!confirm('Limpar todo o histórico de faturas?')) return;
+  if (!confirm('Deseja mesmo limpar todo o histórico de faturas?\nTodas as faturas salvas serão removidas.')) return;
+  if (!confirm('Tem certeza? Esta ação apagará TODAS as faturas do histórico permanentemente.')) return;
   saveHistorico([]);
   renderHistorico('');
   toast('🗑️ Histórico limpo');
@@ -4804,7 +4806,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function excluirVenda(id) {
-  if (!confirm('Excluir este registro de venda?')) return;
+  if (!confirm('Deseja mesmo excluir este registro de venda?\nEsta ação não poderá ser desfeita.')) return;
+  if (!confirm('Tem certeza? O registro de venda será excluído permanentemente.')) return;
   saveVendas(loadVendas().filter(function(v){ return v.id !== id; }));
   renderVendas();
   toast('🗑️ Venda removida');
