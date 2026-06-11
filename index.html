@@ -5162,26 +5162,56 @@ function _preencherBlocoRV(it) {
   // ══ MARCAÇÃO DE ASSENTO ═══════════════════════════════════════════════════
   else if (it.isAssento && it.assento) {
     var as = it.assento;
-    setV('rv-fornecedor', as.fornecedor);
+    setV('rv-fornecedor',  as.fornecedor);  // cia aérea no campo geral
+    setV('rv-as-cia',      as.fornecedor);  // e no campo específico
+    setV('rv-as-data',     as.inicio);      // data do voo
+    setSelect('rv-as-assento', as.servicos);
+    if (as.doc) setV('rv-localizador', as.doc);
     if (paxNomes.length) setPessoasRV('as', paxNomes);
   }
 
   // ══ FRANQUIA DE BAGAGEM ═══════════════════════════════════════════════════
   else if (it.isBagagem && it.bagagem) {
     var bg = it.bagagem;
-    setV('rv-fornecedor', bg.fornecedor);
+    setV('rv-fornecedor', bg.fornecedor);   // cia aérea no campo geral
+    setV('rv-bg-cia',     bg.fornecedor);   // e no campo específico
+    setV('rv-bg-pnr',     bg.doc);          // localizador/PNR
+    setV('rv-bg-data',    bg.inicio);       // data do voo
+    setSelect('rv-bg-franquia', bg.servicos);
     if (paxNomes.length) setPessoasRV('bg', paxNomes);
   }
 
-  // ══ OUTROS (cruzeiro, excursão, transfer: sem campos específicos na fatura)
-  // O bloco correto já está visível via onProdutoChange().
-  // Passageiros são mapeados conforme o tipo de produto.
+  // ══ OUTROS (inclui Outros cadastrados na fatura) ═══════════════════════════
+  else if (it.isOutros && it.outros) {
+    var ot = it.outros;
+    setV('rv-fornecedor',  ot.fornecedor);
+    setV('rv-ot-tipo',     ot.fornecedor);
+    setV('rv-ot-detalhes', ot.descricao);
+    if (ot.inicio && ot.fim) {
+      var fmtOt = function(d) {
+        if (!d) return '';
+        var p = d.split('-');
+        return p.length === 3 ? p[2]+'/'+p[1]+'/'+p[0] : d;
+      };
+      setV('rv-ot-validade', fmtOt(ot.inicio) + ' a ' + fmtOt(ot.fim));
+    }
+    if (paxNomes.length) setPessoasRV('ot', paxNomes);
+  }
+
+  // ══ CRUZEIRO, EXCURSÃO, TRANSFER ══════════════════════════════════════════
+  // Estes produtos não têm bloco de campos na fatura (só no RV).
+  // Transporte apenas os passageiros — restante o usuário preenche no RV.
   else {
     var prod = it.prod || '';
-    if (prod === 'Cruzeiro'              && paxNomes.length) setPessoasRV('cz', paxNomes);
-    if (prod.includes('Excurs')          && paxNomes.length) setPessoasRV('ex', paxNomes);
-    if (prod === 'Transfer'              && paxNomes.length) setPessoasRV('tr', paxNomes);
-    if (prod.includes('Outros')          && paxNomes.length) setPessoasRV('ot', paxNomes);
+    if (prod === 'Cruzeiro')             { if (paxNomes.length) setPessoasRV('cz', paxNomes); }
+    else if (prod.includes('Excurs'))    { if (paxNomes.length) setPessoasRV('ex', paxNomes); }
+    else if (prod === 'Transfer')        {
+      if (paxNomes.length) {
+        setPessoasRV('tr', paxNomes);
+        setV('rv-tr-pax', paxNomes.length);
+      }
+    }
+    else if (prod.includes('Outros'))    { if (paxNomes.length) setPessoasRV('ot', paxNomes); }
   }
 }
 
@@ -5384,35 +5414,70 @@ async function handleAIFile(itemId) {
     const isHotel = prodVal === PROD_HOTEL;
 
     const systemPrompt =
-      'Você é um assistente especializado em extrair dados de documentos de viagem. ' +
-      'Analise o documento e extraia as informações. ' +
-      'IMPORTANTE: Responda SOMENTE com o objeto JSON puro, sem nenhum texto antes ou depois, ' +
-      'sem blocos de código, sem markdown, sem explicações. Apenas o JSON.';
+      'Você é um assistente especializado em extrair dados de documentos de viagem para uma agência de turismo brasileira. ' +
+      'Analise o documento, identifique o tipo de serviço PELO CONTEÚDO (não pelo nome do arquivo) e extraia as informações. ' +
+      'RESPONDA SOMENTE com o objeto JSON puro, sem markdown, sem texto extra, sem blocos de código.';
 
-    let userPrompt;
-    if (isHotel) {
-      userPrompt =
-        'Analise este documento de hospedagem/reserva de hotel.\n' +
-        'Retorne JSON com esta estrutura (null para campos não encontrados):\n' +
-        '{"tipo":"hotel","nome_hotel":"string","reserva":"string","fornecedor":"string",' +
-        '"checkin":"YYYY-MM-DD","checkout":"YYYY-MM-DD","destino":"Nacional ou Internacional",' +
-        '"acomodacao":"Duplo Casal|Duplo Solteiro|Quádruplo|Single|Triplo",' +
-        '"categoria":"Standard|Superior|Luxo|Suíte|etc","regime":"Sem café|Café da manhã|Meia pensão|Pensão completa|All inclusive|Freestyle",' +
-        '"servicos_inclusos":"string","endereco":"string",' +
-        '"passageiros":[{"nome":"string","cpf":"string ou null","nascimento":"YYYY-MM-DD ou null"}],' +
-        '"valor":"numero sem R$ ou null"}';
-    } else {
-      userPrompt =
-        'Analise este documento de passagem aérea/bilhete.\n' +
-        'Retorne JSON com esta estrutura (null para campos não encontrados):\n' +
-        '{"tipo":"aereo","cia_aerea":"sigla (ex: G3, LA, AD)","localizador":"string","classe":"string",' +
-        '"destino":"Nacional ou Internacional",' +
-        '"trechos":[{"label":"IDA ou VOLTA","origem":"IATA 3 letras","destino":"IATA 3 letras",' +
-        '"voo":"numero","cia":"sigla","data_saida":"YYYY-MM-DD","hora_saida":"HH:MM",' +
-        '"data_chegada":"YYYY-MM-DD","hora_chegada":"HH:MM"}],' +
-        '"passageiros":[{"nome":"string","cpf":"string ou null","nascimento":"YYYY-MM-DD ou null"}],' +
-        '"valor":"numero sem R$ ou null"}';
-    }
+    const userPrompt =
+      'Analise este documento de viagem. Identifique o tipo e retorne APENAS o JSON correspondente:\n\n' +
+
+      'PASSAGEM AÉREA (e-ticket, bilhete, itinerário de voo):\n' +
+      '{"tipo":"aereo","cia_aerea":"sigla ex:G3,LA,AD","localizador":"string","classe":"Y ou M ou J etc",' +
+      '"destino":"Nacional ou Internacional",' +
+      '"trechos":[{"label":"IDA ou VOLTA","origem":"IATA","destino":"IATA","voo":"numero","cia":"sigla",' +
+      '"data_saida":"YYYY-MM-DD","hora_saida":"HH:MM","data_chegada":"YYYY-MM-DD","hora_chegada":"HH:MM"}],' +
+      '"passageiros":[{"nome":"string","cpf":"null","nascimento":"null"}],"valor":"numero ou null}\n\n' +
+
+      'HOSPEDAGEM/HOTEL (voucher hotel, reserva, booking):\n' +
+      '{"tipo":"hotel","nome_hotel":"string","reserva":"string","fornecedor":"string",' +
+      '"checkin":"YYYY-MM-DD","checkout":"YYYY-MM-DD","destino":"Nacional ou Internacional",' +
+      '"acomodacao":"Duplo Casal ou Duplo Solteiro ou Single ou Triplo ou Quádruplo",' +
+      '"categoria":"Standard ou Superior ou Luxo ou Suíte","regime":"Sem café ou Café da manhã ou Meia pensão ou All inclusive",' +
+      '"servicos_inclusos":"string","endereco":"string",' +
+      '"passageiros":[{"nome":"string"}],"valor":"numero ou null}\n\n' +
+
+      'ALUGUEL DE CARRO (voucher locação, contrato veículo):\n' +
+      '{"tipo":"carro","locadora":"string","reserva":"string","categoria":"string",' +
+      '"retirada":"YYYY-MM-DD","devolucao":"YYYY-MM-DD","local_retirada":"string","local_devolucao":"string",' +
+      '"destino":"Nacional ou Internacional","extras":"string",' +
+      '"passageiros":[{"nome":"string"}],"valor":"numero ou null}\n\n' +
+
+      'SEGURO VIAGEM (apólice, certificado seguro):\n' +
+      '{"tipo":"seguro","seguradora":"string","apolice":"string","plano":"string",' +
+      '"inicio":"YYYY-MM-DD","fim":"YYYY-MM-DD","destino":"Nacional ou Internacional","cobertura":"string",' +
+      '"passageiros":[{"nome":"string"}],"valor":"numero ou null}\n\n' +
+
+      'CRUZEIRO (voucher marítimo, reserva navio):\n' +
+      '{"tipo":"cruzeiro","cia":"string","navio":"string","reserva":"string",' +
+      '"embarque":"YYYY-MM-DD","desembarque":"YYYY-MM-DD","porto":"string","cabine":"string",' +
+      '"passageiros":[{"nome":"string"}],"valor":"numero ou null}\n\n' +
+
+      'EXCURSÃO / PASSEIO (voucher passeio, city tour, ingresso, transfer):\n' +
+      '{"tipo":"excursao","nome":"string","operadora":"string",' +
+      '"data":"YYYY-MM-DD","horario":"HH:MM","local":"string",' +
+      '"passageiros":[{"nome":"string"}],"valor":"numero ou null}\n\n' +
+
+      'TRANSFER / TRANSLADO (voucher transfer, translado, shuttle):\n' +
+      '{"tipo":"transfer","prestador":"string","data":"YYYY-MM-DD","horario":"HH:MM",' +
+      '"origem":"string","destino_local":"string",' +
+      '"passageiros":[{"nome":"string"}],"valor":"numero ou null}\n\n' +
+
+      'MARCAÇÃO DE ASSENTO (seat selection, assento preferencial):\n' +
+      '{"tipo":"assento","cia":"string","localizador":"string",' +
+      '"data_voo":"YYYY-MM-DD","servicos":"string",' +
+      '"passageiros":[{"nome":"string"}],"valor":"numero ou null}\n\n' +
+
+      'FRANQUIA DE BAGAGEM (baggage fee, despacho de bagagem):\n' +
+      '{"tipo":"bagagem","cia":"string","localizador":"string",' +
+      '"data_voo":"YYYY-MM-DD","franquia":"string",' +
+      '"passageiros":[{"nome":"string"}],"valor":"numero ou null}\n\n' +
+
+      'OUTROS SERVIÇOS (qualquer outro voucher não listado acima):\n' +
+      '{"tipo":"outros","descricao":"string","fornecedor":"string",' +
+      '"inicio":"YYYY-MM-DD","fim":"YYYY-MM-DD",' +
+      '"passageiros":[{"nome":"string"}],"valor":"numero ou null}\n\n' +
+
+      'Retorne SOMENTE o JSON do tipo identificado, sem texto adicional.';
 
     // Build message content
     let msgContent;
@@ -5488,9 +5553,10 @@ async function handleAIFile(itemId) {
     }
 
     let filled = 0;
+    const tipoIA = extracted.tipo || '';
 
     // ── PASSAGEM AÉREA ──
-    if (extracted.tipo === 'aereo' || (!isHotel)) {
+    if (tipoIA === 'aereo') {
       if (!isAereo) { selectProd(itemId, PROD_AEREO); await sleep(120); }
       if (extracted.cia_aerea)  { setVal('fl-cia-'    + itemId, extracted.cia_aerea);  filled++; }
       if (extracted.localizador){ setVal('fl-loc-'    + itemId, extracted.localizador); filled++; }
@@ -5520,7 +5586,7 @@ async function handleAIFile(itemId) {
     }
 
     // ── HOSPEDAGEM ──
-    else if (extracted.tipo === 'hotel' || isHotel) {
+    else if (tipoIA === 'hotel') {
       if (!isHotel) { selectProd(itemId, PROD_HOTEL); await sleep(120); }
       if (extracted.nome_hotel)       { setVal('ht-hotel-'      + itemId, extracted.nome_hotel);       filled++; }
       if (extracted.reserva)          { setVal('ht-reserva-'    + itemId, extracted.reserva);           filled++; }
@@ -5535,6 +5601,79 @@ async function handleAIFile(itemId) {
       if (extracted.servicos_inclusos){ setVal('ht-servicos-'   + itemId, extracted.servicos_inclusos);  filled++; }
       if (extracted.endereco)         { setVal('ht-endereco-'   + itemId, extracted.endereco);           filled++; }
       if (extracted.valor)            { setVal('item-price-'    + itemId, extracted.valor); recalcItem(itemId); filled++; }
+    }
+
+    // ── ALUGUEL DE CARRO ──
+    else if (tipoIA === 'carro') {
+      if (prodVal !== PROD_CARRO) { selectProd(itemId, PROD_CARRO); await sleep(120); }
+      if (extracted.locadora)      { setVal('cr-fornecedor-' + itemId, extracted.locadora);      filled++; }
+      if (extracted.reserva)       { setVal('cr-doc-'        + itemId, extracted.reserva);       filled++; }
+      if (extracted.categoria)     { setVal('cr-cat-'        + itemId, extracted.categoria);     filled++; }
+      if (extracted.retirada)      { setVal('cr-retirada-'   + itemId, extracted.retirada);      filled++; }
+      if (extracted.devolucao)     { setVal('cr-devolucao-'  + itemId, extracted.devolucao);     filled++; }
+      if (extracted.local_retirada){ setVal('cr-local-ret-'  + itemId, extracted.local_retirada);filled++; }
+      if (extracted.destino)       { setVal('cr-dest-'       + itemId, extracted.destino);       filled++; }
+      if (extracted.valor)         { setVal('item-price-'    + itemId, extracted.valor); recalcItem(itemId); filled++; }
+    }
+
+    // ── SEGURO VIAGEM ──
+    else if (tipoIA === 'seguro') {
+      if (prodVal !== PROD_SEGURO) { selectProd(itemId, PROD_SEGURO); await sleep(120); }
+      if (extracted.seguradora) { setVal('sg-fornecedor-' + itemId, extracted.seguradora); filled++; }
+      if (extracted.apolice)    { setVal('sg-doc-'        + itemId, extracted.apolice);    filled++; }
+      if (extracted.inicio)     { setVal('sg-inicio-'     + itemId, extracted.inicio);     filled++; }
+      if (extracted.fim)        { setVal('sg-fim-'        + itemId, extracted.fim);        filled++; }
+      if (extracted.destino)    { setVal('sg-dest-'       + itemId, extracted.destino);    filled++; }
+      if (extracted.valor)      { setVal('item-price-'    + itemId, extracted.valor); recalcItem(itemId); filled++; }
+    }
+
+    // ── CRUZEIRO ──
+    else if (tipoIA === 'cruzeiro') {
+      if (prodVal !== 'Cruzeiro') { selectProd(itemId, 'Cruzeiro'); await sleep(120); }
+      if (extracted.valor) { setVal('item-price-' + itemId, extracted.valor); recalcItem(itemId); filled++; }
+    }
+
+    // ── EXCURSÃO / PASSEIO ──
+    else if (tipoIA === 'excursao') {
+      if (prodVal !== 'Excursão / Passeio') { selectProd(itemId, 'Excursão / Passeio'); await sleep(120); }
+      if (extracted.valor) { setVal('item-price-' + itemId, extracted.valor); recalcItem(itemId); filled++; }
+    }
+
+    // ── TRANSFER ──
+    else if (tipoIA === 'transfer') {
+      if (prodVal !== 'Transfer') { selectProd(itemId, 'Transfer'); await sleep(120); }
+      if (extracted.valor) { setVal('item-price-' + itemId, extracted.valor); recalcItem(itemId); filled++; }
+    }
+
+    // ── MARCAÇÃO DE ASSENTO ──
+    else if (tipoIA === 'assento') {
+      if (prodVal !== PROD_ASSENTO) { selectProd(itemId, PROD_ASSENTO); await sleep(120); }
+      if (extracted.cia)        { setVal('as-fornecedor-' + itemId, extracted.cia);        filled++; }
+      if (extracted.localizador){ setVal('as-doc-'        + itemId, extracted.localizador); filled++; }
+      if (extracted.data_voo)   { setVal('as-inicio-'     + itemId, extracted.data_voo);   filled++; }
+      if (extracted.servicos)   { setVal('as-servicos-'   + itemId, extracted.servicos);   filled++; }
+      if (extracted.valor)      { setVal('item-price-'    + itemId, extracted.valor); recalcItem(itemId); filled++; }
+    }
+
+    // ── FRANQUIA DE BAGAGEM ──
+    else if (tipoIA === 'bagagem') {
+      if (prodVal !== PROD_BAGAGEM) { selectProd(itemId, PROD_BAGAGEM); await sleep(120); }
+      if (extracted.cia)        { setVal('bg-fornecedor-' + itemId, extracted.cia);        filled++; }
+      if (extracted.localizador){ setVal('bg-doc-'        + itemId, extracted.localizador); filled++; }
+      if (extracted.data_voo)   { setVal('bg-inicio-'     + itemId, extracted.data_voo);   filled++; }
+      if (extracted.franquia)   { setVal('bg-servicos-'   + itemId, extracted.franquia);   filled++; }
+      if (extracted.valor)      { setVal('item-price-'    + itemId, extracted.valor); recalcItem(itemId); filled++; }
+    }
+
+    // ── OUTROS ──
+    else if (tipoIA === 'outros') {
+      if (prodVal !== PROD_OUTROS) { selectProd(itemId, PROD_OUTROS); await sleep(120); }
+      if (extracted.valor) { setVal('item-price-' + itemId, extracted.valor); recalcItem(itemId); filled++; }
+    }
+
+    // ── TIPO NÃO RECONHECIDO ──
+    else {
+      toast('⚠️ Tipo de documento não reconhecido. Verifique o arquivo.');
     }
 
     // ── PASSAGEIROS ──
