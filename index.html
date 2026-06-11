@@ -4999,14 +4999,19 @@ function getVendasFiltradas() {
 function autoRegistrarDaFatura() {
   try {
     var items = getItems();
-    var produto = items.length > 0 ? items[0].prod : '';
+    if (!items.length) { novaVenda(); openRegistro(); return; }
+
+    var it       = items[0];
+    var produto  = it.prod || '';
+
+    // ── Destino ──
     var destino = '';
-    if (items.length > 0) {
-      var it = items[0];
-      if (it.isAereo && it.flight) destino = it.flight.dest || '';
-      if (it.isHotel && it.hotel)  destino = it.hotel.dest  || '';
-      if (it.isCarro && it.carro)  destino = it.carro.dest  || '';
-    }
+    if (it.isAereo  && it.flight) destino = it.flight.dest   || '';
+    if (it.isHotel  && it.hotel)  destino = it.hotel.dest    || '';
+    if (it.isCarro  && it.carro)  destino = it.carro.dest    || '';
+    if (it.isSeguro && it.seguro) destino = it.seguro.dest   || '';
+
+    // ── Total ──
     var subtotal = items.reduce(function(s,i){ return s+i.subtotal; }, 0);
     var taxServ  = parseFloat(document.getElementById('f-tax-serv').value)||0;
     var taxRav   = parseFloat(document.getElementById('f-tax-rav').value) ||0;
@@ -5014,6 +5019,10 @@ function autoRegistrarDaFatura() {
     var disc     = parseFloat(document.getElementById('f-discount').value)||0;
     var total    = subtotal + taxServ + taxRav + taxDu - disc;
 
+    // ── Data de emissão da fatura ──
+    var dataEmissao = document.getElementById('f-emission')?.value || '';
+
+    // ── Abre o form com campos básicos ──
     novaVenda({
       fatura:   document.getElementById('f-number')?.value || '',
       cliente:  document.getElementById('c-name')?.value   || '',
@@ -5022,9 +5031,140 @@ function autoRegistrarDaFatura() {
       produto:  produto,
       valor:    total > 0 ? total : '',
     });
+
+    // Usa a data de emissão da fatura (não "hoje")
+    if (dataEmissao) {
+      var rvData = document.getElementById('rv-data');
+      if (rvData) rvData.value = dataEmissao;
+    }
+
+    // Dispara onProdutoChange para exibir o bloco correto
+    onProdutoChange();
+
+    // Preenche os campos específicos do produto com delay mínimo para DOM
+    setTimeout(function() {
+      try { _preencherBlocoRV(it); } catch(e) { console.warn('_preencherBlocoRV:', e); }
+    }, 120);
+
     openRegistro();
-    toast('📊 Dados da fatura importados! Complete as informações internas.');
-  } catch(e) { console.warn('autoRegistrar error:', e); }
+    toast('📊 Fatura importada com sucesso! Complete as informações internas.');
+  } catch(e) {
+    console.warn('autoRegistrar error:', e);
+    toast('⚠️ Erro ao importar: ' + e.message);
+  }
+}
+
+// ── Preenche o bloco de detalhe do produto no Registro de Vendas ──────────
+function _preencherBlocoRV(it) {
+  var pax      = getPassengers();
+  var paxNomes = pax.map(function(p){ return p.name; });
+
+  function setV(id, v) {
+    var el = document.getElementById(id);
+    if (el && v !== undefined && v !== null && String(v).trim() !== '') el.value = v;
+  }
+  function setSelect(id, v) {
+    if (!v) return;
+    var sel = document.getElementById(id);
+    if (!sel) return;
+    var opt = Array.from(sel.options).find(function(o){
+      return o.value.toLowerCase() === v.toLowerCase() ||
+             o.text.toLowerCase().includes(v.toLowerCase());
+    });
+    if (opt) sel.value = opt.value;
+  }
+
+  // ══ PASSAGEM AÉREA ════════════════════════════════════════════════════════
+  if (it.isAereo && it.flight) {
+    var f = it.flight;
+    setV('rv-ae-cia',     f.cia);
+    setV('rv-ae-bilhete', f.loc);
+    setSelect('rv-ae-classe', f.classe);
+
+    // Trechos
+    if (Array.isArray(f.trechos) && f.trechos.length > 0) {
+      var cont = document.getElementById('rv-ae-trechos-container');
+      if (cont) { cont.innerHTML = ''; _rvTrechoCount = 0; }
+      f.trechos.forEach(function(t) {
+        if (!t.orig && !t.dest) return;
+        addTrechoRV();
+        var tid = _rvTrechoCount;
+        setV('rv-tr-orig-'+tid, t.orig);
+        setV('rv-tr-dest-'+tid, t.dest);
+        setV('rv-tr-data-'+tid, t.dSaida);
+        setV('rv-tr-voo-'+tid,  t.voo);
+        setV('rv-tr-dep-'+tid,  t.hSaida ? t.hSaida.substring(0,5) : '');
+        setV('rv-tr-arr-'+tid,  t.hCheg  ? t.hCheg.substring(0,5)  : '');
+      });
+    }
+
+    // Passageiros da fatura → passageiros do voo no RV
+    if (paxNomes.length) setPaxAereoRV(paxNomes);
+  }
+
+  // ══ HOSPEDAGEM ════════════════════════════════════════════════════════════
+  else if (it.isHotel && it.hotel) {
+    var h = it.hotel;
+    setV('rv-ht-hotel',    h.hotel);
+    setV('rv-ht-reserva',  h.reserva);
+    setV('rv-ht-checkin',  h.checkin);
+    setV('rv-ht-checkout', h.checkout);
+    setV('rv-fornecedor',  h.fornecedor);
+    setSelect('rv-ht-quarto',  h.acom);
+    setSelect('rv-ht-regime',  h.reg);
+    calcDiariasRV();
+    if (paxNomes.length) {
+      setPessoasRV('ht', paxNomes);
+      setV('rv-ht-hospedes', paxNomes.length);
+    }
+  }
+
+  // ══ ALUGUEL DE CARRO ══════════════════════════════════════════════════════
+  else if (it.isCarro && it.carro) {
+    var c = it.carro;
+    setV('rv-cr-locadora',  c.fornecedor);
+    setV('rv-cr-reserva',   c.doc);
+    setV('rv-cr-retirada',  c.retirada);
+    setV('rv-cr-devolucao', c.devolucao);
+    setV('rv-cr-local',     c.localRet);
+    setSelect('rv-cr-categoria', c.cat);
+    if (paxNomes.length) setV('rv-cr-condutor', paxNomes[0]);
+  }
+
+  // ══ SEGURO VIAGEM ═════════════════════════════════════════════════════════
+  else if (it.isSeguro && it.seguro) {
+    var sg = it.seguro;
+    setV('rv-sg-seguradora', sg.fornecedor);
+    setV('rv-sg-apolice',    sg.doc);
+    setV('rv-sg-inicio',     sg.inicio);
+    setV('rv-sg-fim',        sg.fim);
+    if (paxNomes.length) setPessoasRV('sg', paxNomes);
+  }
+
+  // ══ MARCAÇÃO DE ASSENTO ═══════════════════════════════════════════════════
+  else if (it.isAssento && it.assento) {
+    var as = it.assento;
+    setV('rv-fornecedor', as.fornecedor);
+    if (paxNomes.length) setPessoasRV('as', paxNomes);
+  }
+
+  // ══ FRANQUIA DE BAGAGEM ═══════════════════════════════════════════════════
+  else if (it.isBagagem && it.bagagem) {
+    var bg = it.bagagem;
+    setV('rv-fornecedor', bg.fornecedor);
+    if (paxNomes.length) setPessoasRV('bg', paxNomes);
+  }
+
+  // ══ OUTROS (cruzeiro, excursão, transfer: sem campos específicos na fatura)
+  // O bloco correto já está visível via onProdutoChange().
+  // Passageiros são mapeados conforme o tipo de produto.
+  else {
+    var prod = it.prod || '';
+    if (prod === 'Cruzeiro'              && paxNomes.length) setPessoasRV('cz', paxNomes);
+    if (prod.includes('Excurs')          && paxNomes.length) setPessoasRV('ex', paxNomes);
+    if (prod === 'Transfer'              && paxNomes.length) setPessoasRV('tr', paxNomes);
+    if (prod.includes('Outros')          && paxNomes.length) setPessoasRV('ot', paxNomes);
+  }
 }
 
 
