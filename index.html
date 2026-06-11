@@ -5269,8 +5269,8 @@ async function handleAIFile(itemId) {
       ];
     }
 
-    // Call Anthropic API — multi-proxy fallback for CORS bypass
-    const apiKey = getApiKey();
+    // Call Anthropic API — sempre via Cloudflare Worker (proxy)
+    const apiKey = getApiKey() || 'use-worker';
 
     const payload = JSON.stringify({
       model:      'claude-sonnet-4-5',
@@ -5280,17 +5280,7 @@ async function handleAIFile(itemId) {
     });
 
     let response;
-
-    if (apiKey) {
-      response = await callWithProxyFallback(apiKey, payload, status);
-    } else {
-      // Inside claude.ai — direct call, no CORS issue
-      response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'anthropic-version': '2023-06-01' },
-        body: payload
-      });
-    }
+    response = await callWithProxyFallback(apiKey, payload, status);
 
     if (!response.ok) {
       const errBody = await response.text();
@@ -5390,15 +5380,9 @@ async function handleAIFile(itemId) {
     console.error('AI fill error:', err);
     let msg = err.message || 'Erro desconhecido';
     if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('CORS')) {
-      const hasKey = getApiKey();
-      const isHTTPS2 = window.location.protocol === 'https:';
-      if (isHTTPS2 && hasKey) {
-        msg = 'Erro ao conectar à API. Sua chave pode estar inválida — verifique em ⚙️ Configurações.';
-      } else if (hasKey) {
-        msg = 'Sem conexão com a API. Inicie o proxy local ou acesse pelo site online.';
-      } else {
-        msg = 'Configure sua chave de API em ⚙️ Configurações.';
-      }
+      msg = '❌ Sem conexão com o servidor de IA. Verifique sua internet e tente novamente.';
+    } else if (msg.includes('401') || msg.includes('invalid') || msg.includes('API key')) {
+      msg = '🔑 Chave de API inválida. Configure em ⚙️ Configurações.';
     }
     status.className = 'ai-status error';
     status.innerHTML =
