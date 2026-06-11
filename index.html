@@ -700,9 +700,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
 /* Bloco voo na fatura */
 .inv-flight-block{margin-top:.4rem;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:6px;padding:.65rem .85rem}
 .inv-flight-title{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:#6d28d9;margin-bottom:.4rem}
-.inv-trecho-row{display:flex;align-items:flex-start;gap:.5rem;font-size:.76rem;padding:.2rem 0;border-bottom:1px dashed #ddd6fe;flex-wrap:wrap}
+.inv-trecho-row{display:grid;grid-template-columns:auto minmax(100px,auto) 1fr 1fr 1fr;align-items:center;gap:.5rem;font-size:.76rem;padding:.28rem .3rem;border-bottom:1px dashed #ddd6fe}
 .inv-trecho-row:last-child{border-bottom:none}
-.inv-trecho-airports{font-weight:700;color:#4c1d95;min-width:80px}
+.inv-trecho-airports{font-weight:700;color:#4c1d95}
+.inv-trecho-cell{display:flex;flex-direction:column;gap:.05rem}
+.inv-trecho-lbl{font-size:.56rem;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.05em}
+.inv-trecho-val{font-size:.76rem;font-weight:600;color:#1a1a2e}
 .inv-trecho-info{color:#6b7280;font-size:.72rem;flex:1}
 .inv-trecho-badge{background:#ede9fe;color:#5b21b6;border-radius:3px;padding:.1rem .35rem;font-size:.66rem;font-weight:700;white-space:nowrap}
 
@@ -713,7 +716,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
 .inv-hotel-checkin{background:#166534;color:white;border-radius:4px;padding:.22rem .6rem;font-size:.74rem;font-weight:600}
 .inv-hotel-checkout{background:#15803d;color:white;border-radius:4px;padding:.22rem .6rem;font-size:.74rem;font-weight:600}
 .inv-hotel-dates-arrow{color:#86efac;font-size:1rem}
-.inv-hotel-grid{display:grid;grid-template-columns:1fr 1fr;gap:.15rem .8rem}
+.inv-hotel-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:.15rem .8rem}
 .inv-hotel-row{font-size:.75rem;color:#1a1a1a;padding:.1rem 0}
 .inv-hotel-label{color:#6b7280;font-size:.7rem}
 .inv-hotel-value{font-weight:500}
@@ -1148,7 +1151,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
 
 <!-- VOUCHER MODAL -->
 <div class="modal-overlay" id="voucher-overlay" style="align-items:center;justify-content:center;padding:1rem;z-index:9999">
-  <div style="background:white;border-radius:12px;width:600px;max-width:96vw;max-height:94vh;overflow-y:auto;box-shadow:0 25px 80px rgba(0,0,0,.5)" id="voucher-wrapper">
+  <div style="background:white;border-radius:12px;width:780px;max-width:96vw;max-height:94vh;overflow-y:auto;box-shadow:0 25px 80px rgba(0,0,0,.5)" id="voucher-wrapper">
 
     <!-- Controles (não aparecem no print) -->
     <div class="voucher-controls" style="display:flex;justify-content:space-between;align-items:center;padding:.7rem 1rem;background:#0f2027;border-radius:12px 12px 0 0">
@@ -1199,7 +1202,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--sp-bg);color:var(--sp-whi
         </div>
 
         <!-- Grid de dados -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-bottom:1.2rem" id="vch-grid">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.75rem;margin-bottom:1.2rem" id="vch-grid">
         </div>
 
         <!-- Valor total -->
@@ -2636,7 +2639,17 @@ function generateInvoice(){
 
   function flightHTML(f){
     if(!f)return'';
-    const trechosHTML=f.trechos.map(t=>{if(!t.orig&&!t.dest&&!t.voo)return'';return`<div class="inv-trecho-row"><div class="inv-trecho-airports">${t.orig||'—'} → ${t.dest||'—'}</div><span class="inv-trecho-badge">${t.label}</span><div class="inv-trecho-info">${t.cia||f.cia?`Voo ${t.cia||f.cia}${t.voo?' '+t.voo:''}`:''} ${t.dSaida?` | Saída: ${fmtDate(t.dSaida)}${t.hSaida?' '+t.hSaida:''}`:''} ${t.dCheg?` | Chegada: ${fmtDate(t.dCheg)}${t.hCheg?' '+t.hCheg:''}`:''}</div></div>`}).filter(Boolean).join('');
+    const trechosHTML=f.trechos.map(t=>{
+      if(!t.orig&&!t.dest&&!t.voo)return'';
+      const vooNum = (t.cia||f.cia) ? (t.cia||f.cia)+(t.voo?' '+t.voo:'') : (t.voo||'');
+      return `<div class="inv-trecho-row">
+        <span class="inv-trecho-badge">${t.label||('T'+(f.trechos.indexOf(t)+1))}</span>
+        <div class="inv-trecho-airports">${t.orig||'—'} → ${t.dest||'—'}</div>
+        ${vooNum?`<div class="inv-trecho-cell"><span class="inv-trecho-lbl">Voo</span><span class="inv-trecho-val">${vooNum}</span></div>`:'<div></div>'}
+        ${t.dSaida?`<div class="inv-trecho-cell"><span class="inv-trecho-lbl">Saída</span><span class="inv-trecho-val">${fmtDate(t.dSaida)}${t.hSaida?' '+t.hSaida:''}</span></div>`:'<div></div>'}
+        ${t.dCheg?`<div class="inv-trecho-cell"><span class="inv-trecho-lbl">Chegada</span><span class="inv-trecho-val">${fmtDate(t.dCheg)}${t.hCheg?' '+t.hCheg:''}</span></div>`:'<div></div>'}
+      </div>`;
+    }).filter(Boolean).join('');
     return`<div class="inv-flight-block"><div class="inv-flight-title">✈️ Passagem Aérea${f.dest?' — '+f.dest:''}</div>${(f.cia||f.loc||f.classe)?`<div style="font-size:.72rem;color:#6b7280;margin-bottom:.35rem">${f.cia?`Cia: <strong style="color:#111">${f.cia}</strong>&ensp;`:''}${f.loc?`Localizador: <strong style="color:#111">${f.loc}</strong>&ensp;`:''}${f.classe?`Classe: <strong style="color:#111">${f.classe}</strong>`:''}</div>`:''}${trechosHTML}</div>`;
   }
   function carHTML(c){
@@ -2729,7 +2742,10 @@ function generateInvoice(){
     return`<div class="inv-hotel-block"><div class="inv-hotel-title">🏨 ${h.hotel}${h.dest?` <span class="inv-hotel-badge">${h.dest}</span>`:''}</div><div class="inv-hotel-dates"><div class="inv-hotel-checkin">Check-in: ${fmtDate(h.checkin)}</div><div class="inv-hotel-dates-arrow">→</div><div class="inv-hotel-checkout">Check-out: ${fmtDate(h.checkout)}</div>${h.diarias?`<span style="font-size:.76rem;color:#6b7280;margin-left:.3rem">${h.diarias} diária${h.diarias>1?'s':''}</span>`:''}</div><div class="inv-hotel-grid">${rows.join('')}</div></div>`;
   }
 
-  const rowsHTML=items.map(it=>`<tr><td><div class="item-desc">${it.prod}</div>${it.isAereo?flightHTML(it.flight):''}${it.isHotel?hotelHTML(it.hotel):''}${it.isCarro?carHTML(it.carro):''}${it.isSeguro?seguroHTML(it.seguro):''}${it.isAssento?assentoHTML(it.assento):''}${it.isBagagem?bagagemHTML(it.bagagem):''}${it.isOutros?outrosHTML(it.outros):''}</td><td style="white-space:nowrap">${it.qty}</td><td style="white-space:nowrap">${fmt(it.price)}</td><td style="white-space:nowrap">${fmt(it.subtotal)}</td></tr>`).join('');
+  const rowsHTML=items.map(it=>{
+    const detail=(it.isAereo&&it.flight?flightHTML(it.flight):'')+(it.isHotel&&it.hotel?hotelHTML(it.hotel):'')+(it.isCarro&&it.carro?carHTML(it.carro):'')+(it.isSeguro&&it.seguro?seguroHTML(it.seguro):'')+(it.isAssento&&it.assento?assentoHTML(it.assento):'')+(it.isBagagem&&it.bagagem?bagagemHTML(it.bagagem):'')+(it.isOutros&&it.outros?outrosHTML(it.outros):'');
+    return`<tr><td><div class="item-desc">${it.prod}</div></td><td style="white-space:nowrap">${it.qty}</td><td style="white-space:nowrap">${fmt(it.price)}</td><td style="white-space:nowrap">${fmt(it.subtotal)}</td></tr>`+(detail?`<tr><td colspan="4" style="padding-top:0;padding-bottom:.5rem">${detail}</td></tr>`:'');
+  }).join('');
 
   document.getElementById('invoice-preview').innerHTML=`<div class="invoice">
     <div class="inv-header"><div class="inv-logo"><img src="${LOGO_SRC_COLOR}" alt="Mais Viagens" style="height:56px;width:auto"></div><div><div class="inv-doc-type">FATURA</div><div class="inv-doc-number">Nº ${inv.number}</div></div></div>
@@ -4551,7 +4567,7 @@ function gerarVoucher(id) {
       + '<div style="background:'+corBg+';padding:.45rem .85rem;font-family:Arial,sans-serif;font-size:.62rem;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:'+corTxt+'">'
         + icone + ' ' + titulo
       + '</div>'
-      + '<div style="padding:.7rem .85rem;display:grid;grid-template-columns:1fr 1fr;gap:.55rem;background:#f8fffe">'
+      + '<div style="padding:.7rem .85rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;background:#f8fffe">'
         + conteudo
       + '</div>'
       + '</div>';
@@ -4578,19 +4594,21 @@ function gerarVoucher(id) {
   // ── helper: trechos aéreos no voucher ──
   function trechosVoucher(trechos) {
     if (!trechos || !trechos.length) return '';
-    var html = '<div style="grid-column:1/-1">';
+    var html = '<div style="grid-column:1/-1;margin-top:.2rem">';
     trechos.forEach(function(t, i) {
-      var rota = (t.origem && t.destino) ? t.origem + ' → ' + t.destino : (t.origem || t.destino || '');
-      var infos = [
-        t.voo    ? '✈️ ' + t.voo : '',
-        t.data   ? '📅 ' + fmtD(t.data) : '',
-        (t.partida || t.chegada) ? '🕐 ' + (t.partida||'') + (t.chegada ? ' → ' + t.chegada : '') : '',
-        t.pnr    ? '🔑 ' + t.pnr : '',
-      ].filter(Boolean).join('  ·  ');
-      html += '<div style="border:1px solid #ddd6fe;border-radius:6px;padding:.5rem .7rem;margin-bottom:.35rem;background:#faf5ff">'
-        + '<div style="font-family:Arial,sans-serif;font-size:.65rem;font-weight:700;color:#6d28d9;margin-bottom:.2rem">TRECHO '+(i+1)+(rota?' — '+rota:'')+'</div>'
-        + (infos ? '<div style="font-family:Arial,sans-serif;font-size:.76rem;color:#4c1d95">'+infos+'</div>' : '')
-        + '</div>';
+      var rota = (t.origem && t.destino) ? t.origem + ' → ' + t.destino : (t.origem || t.destino || '—');
+      html += '<div style="border:1px solid #ddd6fe;border-radius:7px;padding:.5rem .75rem;margin-bottom:.3rem;background:#faf5ff;display:grid;grid-template-columns:auto 1fr 1fr 1fr 1fr;align-items:center;gap:.5rem">'
+        // Badge do trecho
+        + '<div style="background:#6d28d9;color:white;border-radius:5px;padding:.2rem .55rem;font-family:Arial,sans-serif;font-size:.6rem;font-weight:700;white-space:nowrap">TRECHO '+(i+1)+'</div>'
+        // Rota
+        + '<div style="font-family:Arial,sans-serif;font-size:.82rem;font-weight:800;color:#4c1d95;white-space:nowrap">'+rota+'</div>'
+        // Voo
+        + (t.voo ? '<div><div style="font-family:Arial,sans-serif;font-size:.52rem;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.06em">Voo</div><div style="font-family:Arial,sans-serif;font-size:.78rem;font-weight:700;color:#1a1a2e">'+t.voo+'</div></div>' : '<div></div>')
+        // Data
+        + (t.data ? '<div><div style="font-family:Arial,sans-serif;font-size:.52rem;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.06em">Data</div><div style="font-family:Arial,sans-serif;font-size:.78rem;font-weight:700;color:#1a1a2e">'+fmtD(t.data)+'</div></div>' : '<div></div>')
+        // Horário
+        + ((t.partida || t.chegada) ? '<div><div style="font-family:Arial,sans-serif;font-size:.52rem;font-weight:700;color:#7c3aed;text-transform:uppercase;letter-spacing:.06em">Horário</div><div style="font-family:Arial,sans-serif;font-size:.78rem;font-weight:700;color:#1a1a2e">'+(t.partida||'')+(t.chegada?' → '+t.chegada:'')+'</div></div>' : '<div></div>')
+      + '</div>';
     });
     return html + '</div>';
   }
@@ -4740,7 +4758,7 @@ function gerarVoucher(id) {
 
   // ── Monta o HTML final do grid ──
   document.getElementById('vch-grid').innerHTML =
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem">'
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.7rem">'
       + gridHtml
       + blocoDetalhe
       + obsVoucher
