@@ -3052,6 +3052,44 @@ function loadCounter(key, start) {
 function saveCounter(key, val) {
   localStorage.setItem(key, val);
 }
+
+// ── Sync contadores com Cloudflare KV ─────────────────────────────────────
+async function syncContadoresFromKV() {
+  try {
+    var resp = await fetch(KV_WORKER + '/contadores');
+    if (!resp.ok) return;
+    var remote = await resp.json();
+    // Usa o MAIOR valor entre local e remoto para cada contador
+    if (remote.fat) {
+      var localFat = loadCounter(NUM_KEY_FAT, 1);
+      if (remote.fat > localFat) saveCounter(NUM_KEY_FAT, remote.fat);
+    }
+    if (remote.ven) {
+      var localVen = loadCounter(NUM_KEY_VEN, 1);
+      if (remote.ven > localVen) saveCounter(NUM_KEY_VEN, remote.ven);
+    }
+    if (remote.vch) {
+      var localVch = loadCounter(NUM_KEY_VCH, 1);
+      if (remote.vch > localVch) saveCounter(NUM_KEY_VCH, remote.vch);
+    }
+    initNumbers();
+    initVoucherDisplay();
+  } catch(e) { console.warn('syncContadoresFromKV error:', e); }
+}
+
+async function syncContadoresToKV() {
+  try {
+    await fetch(KV_WORKER + '/contadores', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({
+        fat: loadCounter(NUM_KEY_FAT, 1),
+        ven: loadCounter(NUM_KEY_VEN, 1),
+        vch: loadCounter(NUM_KEY_VCH, 1),
+      })
+    });
+  } catch(e) { console.warn('syncContadoresToKV error:', e); }
+}
 function padNum(n, digits) {
   return String(n).padStart(digits, '0');
 }
@@ -3070,6 +3108,7 @@ function advanceNumbers() {
   const ven = loadCounter(NUM_KEY_VEN, 1);
   saveCounter(NUM_KEY_FAT, fat + 1);
   saveCounter(NUM_KEY_VEN, ven + 1);
+  syncContadoresToKV();
 }
 // Hook into generateInvoice to advance after generating
 const _origGenerate = generateInvoice;
@@ -5227,6 +5266,7 @@ function getNextVoucher() {
 function advanceVoucher() {
   var n = loadCounter(NUM_KEY_VCH, 1);
   saveCounter(NUM_KEY_VCH, n + 1);
+  syncContadoresToKV();
   return String(n).padStart(5, '0');
 }
 function initVoucherDisplay() {
@@ -6570,8 +6610,9 @@ document.getElementById('f-emission').value=new Date().toISOString().split('T')[
 initNumbers();
 addItem();
 updateSettingsBtnStatus();
-// Busca dados do KV ao carregar a página
+// Busca dados do KV ao carregar a página — contadores têm prioridade para evitar duplicatas
 setTimeout(function() {
+  syncContadoresFromKV();   // ← primeiro: garante contadores corretos em qualquer dispositivo
   fetchHistoricoFromKV();
 }, 1500);
 </script>
