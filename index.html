@@ -5300,19 +5300,33 @@ async function handleAIFile(itemId) {
     const data = await response.json();
     const rawText = (data.content || []).find(b => b.type === 'text')?.text || '';
 
-    // Extrai JSON da resposta — remove markdown se houver
+    // Remove markdown se houver
     let jsonStr = rawText
-      .replace(/```json\s*/gi, '')   // remove ```json
-      .replace(/```\s*/g, '')        // remove ```
+      .replace(/```json\s*/gi, '')
+      .replace(/```\s*/g, '')
       .trim();
 
-    // Tenta encontrar o objeto JSON na resposta
-    const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.error('Resposta bruta da IA:', rawText);
-      throw new Error('Resposta da IA não contém JSON válido. Tente com uma imagem mais nítida.');
+    // Tentativa 1: parse direto
+    let extracted = null;
+    try { extracted = JSON.parse(jsonStr); } catch(e) {}
+
+    // Tentativa 2: pega o maior bloco {...} da resposta
+    if (!extracted) {
+      const matches = jsonStr.match(/\{[\s\S]*\}/g);
+      if (matches) {
+        // Tenta do maior para o menor
+        const sorted = matches.sort((a,b) => b.length - a.length);
+        for (const m of sorted) {
+          try { extracted = JSON.parse(m); break; } catch(e) {}
+        }
+      }
     }
-    const extracted = JSON.parse(jsonMatch[0]);
+
+    if (!extracted) {
+      console.error('Resposta bruta da IA:', rawText);
+      const preview = rawText.substring(0, 200);
+      throw new Error('IA não retornou JSON válido. Resposta: ' + preview);
+    }
 
     let filled = 0;
 
@@ -5426,9 +5440,10 @@ async function callWithProxyFallback(apiKey, payload, statusEl) {
   ];
 
   const baseHeaders = {
-    'Content-Type':      'application/json',
-    'x-api-key':         apiKey,
-    'anthropic-version': '2023-06-01'
+    'Content-Type':        'application/json',
+    'x-api-key':           apiKey,
+    'anthropic-version':   '2023-06-01',
+    'anthropic-beta':      'pdfs-2024-09-25,files-api-2025-04-14'
   };
 
   let lastError = null;
