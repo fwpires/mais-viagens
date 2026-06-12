@@ -2899,12 +2899,28 @@ function updateSettingsBtnStatus() {
 // ===== FECHAR / ABRIR FATURA =====
 let faturaFechada = false;
 
-function toggleFechamento() {
-  const btn = document.getElementById('btn-fechar-fatura');
+async function toggleFechamento() {
+  const btn     = document.getElementById('btn-fechar-fatura');
   const btnGerar = document.getElementById('btn-generate');
-  const sidebar = document.querySelector('.sidebar-body');
+  const sidebar  = document.querySelector('.sidebar-body');
 
   if (!faturaFechada) {
+    // ── VERIFICAÇÃO DE INTERNET ANTES DE FECHAR ──
+    const online = navigator.onLine;
+    let workerOk = false;
+
+    if (online) {
+      try {
+        const r = await fetch(KV_WORKER + '/contadores', { method: 'GET', signal: AbortSignal.timeout(4000) });
+        workerOk = r.ok;
+      } catch(e) { workerOk = false; }
+    }
+
+    if (!online || !workerOk) {
+      toast('❌ Sem conexão com a internet. Conecte-se para fechar a fatura e garantir a sincronização dos contadores.', 6000);
+      return; // Bloqueia o fechamento
+    }
+
     // ── FECHAR FATURA ──
     faturaFechada = true;
 
@@ -3059,19 +3075,24 @@ async function syncContadoresFromKV() {
     var resp = await fetch(KV_WORKER + '/contadores');
     if (!resp.ok) return;
     var remote = await resp.json();
-    // Usa o MAIOR valor entre local e remoto para cada contador
-    if (remote.fat) {
-      var localFat = loadCounter(NUM_KEY_FAT, 1);
-      if (remote.fat > localFat) saveCounter(NUM_KEY_FAT, remote.fat);
-    }
-    if (remote.ven) {
-      var localVen = loadCounter(NUM_KEY_VEN, 1);
-      if (remote.ven > localVen) saveCounter(NUM_KEY_VEN, remote.ven);
-    }
-    if (remote.vch) {
-      var localVch = loadCounter(NUM_KEY_VCH, 1);
-      if (remote.vch > localVch) saveCounter(NUM_KEY_VCH, remote.vch);
-    }
+
+    // Calcula o MAIOR valor entre local e remoto para cada contador
+    var fat = Math.max(loadCounter(NUM_KEY_FAT, 1), remote.fat || 1);
+    var ven = Math.max(loadCounter(NUM_KEY_VEN, 1), remote.ven || 1);
+    var vch = Math.max(loadCounter(NUM_KEY_VCH, 1), remote.vch || 1);
+
+    // Atualiza o local com o maior valor
+    saveCounter(NUM_KEY_FAT, fat);
+    saveCounter(NUM_KEY_VEN, ven);
+    saveCounter(NUM_KEY_VCH, vch);
+
+    // Envia o maior valor de volta ao KV (garante que todos os dispositivos fiquem sincronizados)
+    await fetch(KV_WORKER + '/contadores', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ fat: fat, ven: ven, vch: vch })
+    });
+
     initNumbers();
     initVoucherDisplay();
   } catch(e) { console.warn('syncContadoresFromKV error:', e); }
@@ -4196,11 +4217,29 @@ function getProdutoVenda() {
   return sel.value;
 }
 
-function salvarVenda() {
+async function salvarVenda() {
   try {
   var cliente = document.getElementById('rv-cliente').value.trim();
   if (!cliente) { toast('⚠️ Informe o nome do cliente'); return; }
+
   var editId = document.getElementById('rv-edit-id').value;
+
+  // ── VERIFICAÇÃO DE INTERNET (somente para novas vendas — voucher avança) ──
+  if (!editId) {
+    const online = navigator.onLine;
+    let workerOk = false;
+    if (online) {
+      try {
+        const r = await fetch(KV_WORKER + '/contadores', { method: 'GET', signal: AbortSignal.timeout(4000) });
+        workerOk = r.ok;
+      } catch(e) { workerOk = false; }
+    }
+    if (!online || !workerOk) {
+      toast('❌ Sem conexão com a internet. Conecte-se para salvar e garantir a sincronização do Nº Voucher.', 6000);
+      return;
+    }
+  }
+
   var voucherNum = editId
     ? (document.getElementById('rv-voucher')?.value || getNextVoucher())
     : advanceVoucher();
